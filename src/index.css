@@ -1,0 +1,258 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════
+   HSP ERP — Design System (Tailwind CSS v4)
+   Dark wholesale ERP theme with emerald accent
+   ═══════════════════════════════════════════════════════ */
+
+@theme {
+  --color-surface-900: #09090b;
+  --color-surface-800: #18181b;
+  --color-surface-700: #27272a;
+  --color-surface-600: #3f3f46;
+  --color-surface-500: #52525b;
+  --color-surface-400: #71717a;
+  --color-surface-300: #a1a1aa;
+  --color-surface-200: #d4d4d8;
+  --color-surface-100: #e4e4e7;
+  --color-surface-50: #fafafa;
+
+  --color-primary-900: #022c22;
+  --color-primary-800: #065f46;
+  --color-primary-700: #047857;
+  --color-primary-600: #059669;
+  --color-primary-500: #10b981;
+  --color-primary-400: #34d399;
+  --color-primary-300: #6ee7b7;
+  --color-primary-200: #a7f3d0;
+  --color-primary-100: #d1fae5;
+
+  --color-warning-800: #78350f;
+  --color-warning-700: #92400e;
+  --color-warning-600: #b45309;
+  --color-warning-500: #f59e0b;
+  --color-warning-400: #fbbf24;
+  --color-warning-300: #fcd34d;
+  --color-warning-200: #fde68a;
+  --color-warning-100: #fef3c7;
+
+  --color-danger-600: #dc2626;
+  --color-danger-500: #ef4444;
+  --color-danger-400: #f87171;
+  --color-danger-100: #fee2e2;
+
+  --color-info-600: #2563eb;
+  --color-info-500: #3b82f6;
+  --color-info-400: #60a5fa;
+  --color-info-100: #dbeafe;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-slide-up: slide-up 0.35s ease-out;
+  --animate-slide-right: slide-right 0.3s ease-out;
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ─── Light Mode Overrides ─── */
+.light {
+  --color-surface-900: #fafafa;
+  --color-surface-800: #f4f4f5;
+  --color-surface-700: #e4e4e7;
+  --color-surface-600: #d4d4d8;
+  --color-surface-500: #a1a1aa;
+  --color-surface-400: #71717a;
+  --color-surface-300: #52525b;
+  --color-surface-200: #3f3f46;
+  --color-surface-100: #27272a;
+  --color-surface-50: #09090b;
+}
+
+/* ─── Animations ─── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ─── Base Styles ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-surface-900);
+  color: var(--color-surface-200);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ─── Custom Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-800);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-600);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-500);
+}
+
+/* ─── Utility Classes ─── */
+@utility glass-card {
+  background: color-mix(in srgb, var(--color-surface-800) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-surface-700);
+  border-radius: 12px;
+}
+
+@utility glass-card-hover {
+  background: color-mix(in srgb, var(--color-surface-800) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-surface-700);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  &:hover {
+    border-color: var(--color-surface-600);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+  }
+}
+
+@utility input-field {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background-color: var(--color-surface-900);
+  border: 1px solid var(--color-surface-600);
+  border-radius: 8px;
+  color: var(--color-surface-100);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  }
+  &::placeholder {
+    color: var(--color-surface-500);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-500));
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-400));
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+@utility btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--color-surface-700);
+  color: var(--color-surface-200);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-surface-600);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover {
+    background: var(--color-surface-600);
+    border-color: var(--color-surface-500);
+  }
+}
+
+@utility btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: var(--color-danger-400);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-danger-500) 30%, transparent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover {
+    background: color-mix(in srgb, var(--color-danger-500) 10%, transparent);
+    border-color: var(--color-danger-500);
+  }
+}
+
+@utility badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+}
