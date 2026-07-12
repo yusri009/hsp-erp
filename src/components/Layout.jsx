@@ -45,9 +45,9 @@ function Layout() {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme')
       if (saved) return saved === 'dark'
-      return true // default to dark
+      return false // default to light
     }
-    return true
+    return false
   })
 
   const location = useLocation()
