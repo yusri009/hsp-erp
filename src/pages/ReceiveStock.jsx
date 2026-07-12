@@ -178,7 +178,7 @@ function ReceiveStock() {
                 Invoice Total
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
                 <input
                   type="number"
                   step="0.01"
@@ -295,7 +295,7 @@ function ReceiveStock() {
               <div>
                 <p className="text-xs text-surface-500 uppercase tracking-wider">Invoice Total</p>
                 <p className="text-xl font-bold text-surface-50 tabular-nums">
-                  ₹{invoiceTotal ? Number(invoiceTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
+                  Rs.{invoiceTotal ? Number(invoiceTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
                 </p>
               </div>
             </div>

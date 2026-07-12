@@ -18,7 +18,7 @@ function Customers() {
   // Queries
   const { data: customers, isLoading: customersLoading } = useCustomers()
   const { data: pendingCheques, isLoading: chequesLoading } = usePendingCheques()
-  
+
   // Mutations
   const recordPayment = useRecordPayment()
   const clearCheque = useClearCheque()
@@ -28,7 +28,7 @@ function Customers() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  
+
   // Payment Form State
   const [amount, setAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('Cash')
@@ -42,7 +42,7 @@ function Customers() {
   const [newCustomerCreditLimit, setNewCustomerCreditLimit] = useState('')
   const [addSubmitStatus, setAddSubmitStatus] = useState(null)
   const [addErrorMessage, setAddErrorMessage] = useState('')
-  
+
   // Pending Cheque State
   const [clearingId, setClearingId] = useState(null)
 
@@ -100,7 +100,7 @@ function Customers() {
   // Handle Payment Modal Submit
   const handlePaymentSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!amount || Number(amount) <= 0) {
       setPaymentErrorMessage('Please enter a valid amount.')
       setPaymentSubmitStatus('error')
@@ -123,7 +123,7 @@ function Customers() {
         paymentMethod,
         chequeNumber: paymentMethod === 'Cheque' ? chequeNumber : null,
       })
-      
+
       setPaymentSubmitStatus('success')
       setTimeout(() => {
         setIsPaymentModalOpen(false)
@@ -170,7 +170,7 @@ function Customers() {
       sortable: true,
       render: (val) => (
         <span className="tabular-nums text-surface-300">
-          {val != null ? `₹${Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+          {val != null ? `Rs.${Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
         </span>
       ),
     },
@@ -183,7 +183,7 @@ function Customers() {
         const isOverLimit = row.credit_limit != null && val > row.credit_limit
         return (
           <span className={`tabular-nums font-bold ${isOverLimit ? 'text-danger-400' : 'text-primary-400'}`}>
-            ₹{Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            Rs.{Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </span>
         )
       },
@@ -256,7 +256,7 @@ function Customers() {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-bold text-warning-400 tabular-nums">
-                    ₹{Number(cheque.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    Rs.{Number(cheque.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                   <button
                     onClick={() => handleClearCheque(cheque)}
@@ -317,7 +317,7 @@ function Customers() {
                 Amount
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
                 <input
                   type="number"
                   step="0.01"
@@ -449,7 +449,7 @@ function Customers() {
                 Credit Limit
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
                 <input
                   type="number"
                   step="0.01"

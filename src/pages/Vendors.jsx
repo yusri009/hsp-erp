@@ -171,7 +171,7 @@ function Vendors() {
       sortable: true,
       render: (val) => (
         <span className="tabular-nums font-bold text-primary-400">
-          ₹{Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          Rs.{Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -243,7 +243,7 @@ function Vendors() {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-bold text-warning-400 tabular-nums">
-                    ₹{Number(cheque.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    Rs.{Number(cheque.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                   <button
                     onClick={() => handleClearCheque(cheque)}
@@ -304,7 +304,7 @@ function Vendors() {
                 Amount
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
                 <input
                   type="number"
                   step="0.01"

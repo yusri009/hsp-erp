@@ -35,7 +35,7 @@ function Dashboard() {
           value={
             metricsLoading
               ? '...'
-              : `₹${Number(metrics?.total_receivables || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+              : `Rs.${Number(metrics?.total_receivables || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
           }
           icon={IndianRupee}
           accent="primary"
@@ -45,7 +45,7 @@ function Dashboard() {
           value={
             metricsLoading
               ? '...'
-              : `₹${Number(metrics?.total_payables || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+              : `Rs.${Number(metrics?.total_payables || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
           }
           icon={CreditCard}
           accent="danger"
@@ -55,7 +55,7 @@ function Dashboard() {
           value={
             metricsLoading
               ? '...'
-              : `₹${Number(metrics?.today_sales || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+              : `Rs.${Number(metrics?.today_sales || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
           }
           icon={TrendingUp}
           accent="emerald"

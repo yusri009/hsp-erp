@@ -36,7 +36,7 @@ function NewSale() {
   // Build a lookup map for products by id
   const productMap = useMemo(() => {
     const map = {}
-    ;(products || []).forEach((p) => { map[p.id] = p })
+      ; (products || []).forEach((p) => { map[p.id] = p })
     return map
   }, [products])
 
@@ -204,7 +204,7 @@ function NewSale() {
                     <span>
                       Balance Due:{' '}
                       <span className={`font-semibold ${customer.balance_due > 0 ? 'text-warning-400' : 'text-primary-400'}`}>
-                        ₹{Number(customer.balance_due || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        Rs.{Number(customer.balance_due || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </span>
                     </span>
                   )
@@ -260,7 +260,7 @@ function NewSale() {
                     />
                     {selectedProduct && (
                       <p className="mt-1 text-[11px] text-surface-500">
-                        ₹{Number(selectedProduct.selling_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}/pkt
+                        Rs.{Number(selectedProduct.selling_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}/pkt
                         {' · '}
                         {selectedProduct.stock_quantity ?? 0} in stock
                       </p>
@@ -293,7 +293,7 @@ function NewSale() {
                       Line Total
                     </label>
                     <div className="input-field bg-surface-800/50 flex items-center tabular-nums font-semibold text-surface-100 cursor-default">
-                      ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      Rs.{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
 
@@ -336,7 +336,7 @@ function NewSale() {
               <div>
                 <p className="text-xs text-surface-500 uppercase tracking-wider">Grand Total</p>
                 <p className="text-2xl font-bold text-primary-400 tabular-nums">
-                  ₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  Rs.{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>

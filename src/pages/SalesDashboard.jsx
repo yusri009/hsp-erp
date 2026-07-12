@@ -91,7 +91,7 @@ function SalesDashboard() {
       sortable: true,
       render: (val) => (
         <span className="tabular-nums font-semibold text-surface-100">
-          {val != null ? `₹${Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+          {val != null ? `Rs.${Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
         </span>
       ),
     },
@@ -103,11 +103,10 @@ function SalesDashboard() {
         const isPending = val === 'Pending'
         return (
           <span
-            className={`badge text-xs ${
-              isPending
+            className={`badge text-xs ${isPending
                 ? 'bg-warning-500/15 text-warning-400'
                 : 'bg-primary-500/15 text-primary-400'
-            }`}
+              }`}
           >
             {isPending ? (
               <Clock className="w-3 h-3 mr-1" />
@@ -188,7 +187,7 @@ function SalesDashboard() {
         />
         <StatCard
           label="Total Revenue"
-          value={allLoading ? '...' : `₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          value={allLoading ? '...' : `Rs.${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
           icon={CheckCircle2}
           accent="primary"
         />
@@ -214,9 +213,8 @@ function SalesDashboard() {
             >
               {tab.label}
               <span
-                className={`text-xs px-1.5 py-0.5 rounded-full tabular-nums ${
-                  isActive ? 'bg-primary-500/20 text-primary-300' : 'bg-surface-700 text-surface-500'
-                }`}
+                className={`text-xs px-1.5 py-0.5 rounded-full tabular-nums ${isActive ? 'bg-primary-500/20 text-primary-300' : 'bg-surface-700 text-surface-500'
+                  }`}
               >
                 {count}
               </span>

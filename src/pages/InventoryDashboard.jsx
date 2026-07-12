@@ -100,14 +100,14 @@ function InventoryDashboard() {
       setProdSubmitStatus('error')
       return
     }
-    
+
     const catObj = categories?.find(c => c.id === newProdCategory)
     const catName = catObj?.name || ''
-    
+
     const parts = [catName, newProdSize, newProdColor]
       .filter(Boolean)
       .map(part => part.trim().toUpperCase().replace(/\s+/g, '-'))
-    
+
     setNewProdSku(parts.join('-'))
     setProdError('')
     setProdSubmitStatus(null)
@@ -185,7 +185,7 @@ function InventoryDashboard() {
       sortable: true,
       render: (val) => (
         <span className="tabular-nums text-surface-300">
-          ₹{Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          Rs.{Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -195,7 +195,7 @@ function InventoryDashboard() {
       sortable: true,
       render: (val) => (
         <span className="tabular-nums font-medium text-emerald-400">
-          ₹{Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          Rs.{Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -208,9 +208,8 @@ function InventoryDashboard() {
         return (
           <div className="flex items-center gap-2">
             <span
-              className={`tabular-nums font-bold ${
-                isLow ? 'text-danger-400' : 'text-primary-400'
-              }`}
+              className={`tabular-nums font-bold ${isLow ? 'text-danger-400' : 'text-primary-400'
+                }`}
             >
               {val}
             </span>
@@ -278,7 +277,7 @@ function InventoryDashboard() {
           options={colorOptions}
           disabled={!selectedCategory || colorOptions.length === 0}
         />
-        
+
         {(selectedCategory || selectedSize || selectedColor) && (
           <button
             onClick={() => {
@@ -494,7 +493,7 @@ function InventoryDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
-                  Avg Cost (₹)
+                  Avg Cost (Rs.)
                 </label>
                 <input
                   type="number"
@@ -509,7 +508,7 @@ function InventoryDashboard() {
               </div>
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
-                  Selling Price (₹)
+                  Selling Price (Rs.)
                 </label>
                 <input
                   type="number"

@@ -15,6 +15,7 @@ import {
   Moon,
   LogOut,
   User,
+  FileBarChart2,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
@@ -25,6 +26,7 @@ const navItems = [
   { path: '/sales', label: 'Sales', icon: ShoppingCart },
   { path: '/customers', label: 'Customers', icon: Users },
   { path: '/vendors', label: 'Vendors', icon: Factory },
+  { path: '/reports', label: 'Reports', icon: FileBarChart2 },
 ]
 
 const inventorySubItems = [
