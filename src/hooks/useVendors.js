@@ -1,22 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
 export function useVendors() {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['vendors'],
+    queryKey: ['vendors', tenantId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('vendors')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('name', { ascending: true })
 
       if (error) throw error
       return data
     },
+    enabled: !!tenantId,
   })
 }
 
 export function useAddVendor() {
+  const { tenantId } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -24,6 +30,7 @@ export function useAddVendor() {
       const { data, error } = await supabase
         .from('vendors')
         .insert([{
+          tenant_id: tenantId,
           name,
           contact_number: contactNumber || null,
           total_balance_owed: 0
@@ -41,13 +48,15 @@ export function useAddVendor() {
 }
 
 export function usePendingVendorCheques() {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['pending-vendor-cheques'],
+    queryKey: ['pending-vendor-cheques', tenantId],
     queryFn: async () => {
-      // Assuming 'vendors' relationship exists on transactions for vendor_id
       const { data, error } = await supabase
         .from('transactions')
         .select('*, vendors(name)')
+        .eq('tenant_id', tenantId)
         .eq('type', 'Money Out')
         .eq('payment_method', 'Cheque')
         .eq('status', 'Pending')
@@ -56,6 +65,7 @@ export function usePendingVendorCheques() {
       if (error) throw error
       return data
     },
+    enabled: !!tenantId,
   })
 }
 
@@ -100,4 +110,3 @@ export function useClearVendorCheque() {
     },
   })
 }
-

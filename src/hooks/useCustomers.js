@@ -1,22 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
 export function useCustomers() {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['customers'],
+    queryKey: ['customers', tenantId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('name', { ascending: true })
 
       if (error) throw error
       return data
     },
+    enabled: !!tenantId,
   })
 }
 
 export function useAddCustomer() {
+  const { tenantId } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -24,6 +30,7 @@ export function useAddCustomer() {
       const { data, error } = await supabase
         .from('customers')
         .insert([{
+          tenant_id: tenantId,
           name,
           contact_number: contactNumber || null,
           credit_limit: creditLimit ? Number(creditLimit) : null,
@@ -42,12 +49,15 @@ export function useAddCustomer() {
 }
 
 export function usePendingCheques() {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['pending-cheques'],
+    queryKey: ['pending-cheques', tenantId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transactions')
         .select('*, customers(name)')
+        .eq('tenant_id', tenantId)
         .eq('payment_method', 'Cheque')
         .eq('status', 'Pending')
         .order('date', { ascending: true })
@@ -55,6 +65,7 @@ export function usePendingCheques() {
       if (error) throw error
       return data
     },
+    enabled: !!tenantId,
   })
 }
 

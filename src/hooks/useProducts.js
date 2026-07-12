@@ -1,15 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
 export function useProducts(filters = {}) {
+  const { tenantId } = useAuth()
   const { categoryId, size, color } = filters
 
   return useQuery({
-    queryKey: ['products', { categoryId, size, color }],
+    queryKey: ['products', tenantId, { categoryId, size, color }],
     queryFn: async () => {
       let query = supabase
         .from('products')
         .select('*, categories(name)')
+        .eq('tenant_id', tenantId)
         .order('sku', { ascending: true })
 
       if (categoryId) {
@@ -26,32 +29,40 @@ export function useProducts(filters = {}) {
       if (error) throw error
       return data
     },
+    enabled: !!tenantId,
   })
 }
 
 export function useLowStockProducts(threshold = 5) {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['products', 'low-stock', threshold],
+    queryKey: ['products', tenantId, 'low-stock', threshold],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
         .select('*, categories(name)')
+        .eq('tenant_id', tenantId)
         .lte('stock_quantity', threshold)
         .order('stock_quantity', { ascending: true })
 
       if (error) throw error
       return data
     },
+    enabled: !!tenantId,
   })
 }
 
 export function useProductSizes(categoryId) {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['products', 'sizes', categoryId],
+    queryKey: ['products', tenantId, 'sizes', categoryId],
     queryFn: async () => {
       let query = supabase
         .from('products')
         .select('size')
+        .eq('tenant_id', tenantId)
 
       if (categoryId) {
         query = query.eq('category_id', categoryId)
@@ -63,17 +74,20 @@ export function useProductSizes(categoryId) {
       const uniqueSizes = [...new Set(data.map((p) => p.size).filter(Boolean))]
       return uniqueSizes.sort()
     },
-    enabled: true,
+    enabled: !!tenantId,
   })
 }
 
 export function useProductColors(categoryId, size) {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['products', 'colors', categoryId, size],
+    queryKey: ['products', tenantId, 'colors', categoryId, size],
     queryFn: async () => {
       let query = supabase
         .from('products')
         .select('color')
+        .eq('tenant_id', tenantId)
 
       if (categoryId) {
         query = query.eq('category_id', categoryId)
@@ -88,11 +102,12 @@ export function useProductColors(categoryId, size) {
       const uniqueColors = [...new Set(data.map((p) => p.color).filter(Boolean))]
       return uniqueColors.sort()
     },
-    enabled: true,
+    enabled: !!tenantId,
   })
 }
 
 export function useAddProduct() {
+  const { tenantId } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -100,6 +115,7 @@ export function useAddProduct() {
       const { data, error } = await supabase
         .from('products')
         .insert([{
+          tenant_id: tenantId,
           category_id: categoryId,
           sku: sku || null,
           size: size || null,

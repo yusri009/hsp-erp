@@ -13,7 +13,11 @@ import {
   Factory,
   Sun,
   Moon,
+  LogOut,
+  User,
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabaseClient'
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,6 +36,7 @@ const salesSubItems = [
 ]
 
 function Layout() {
+  const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   
@@ -189,9 +194,36 @@ function Layout() {
           })}
         </nav>
 
-        {/* Bottom Actions (Theme + Collapse) */}
+        {/* Bottom: User Profile + Actions */}
         <div className="flex flex-col border-t border-surface-700">
-          <div className="flex items-center justify-center p-3">
+          {/* User Profile */}
+          <div className={`flex items-center p-3 ${collapsed ? 'justify-center' : 'gap-3'}`}>
+            <div className="w-8 h-8 rounded-lg bg-primary-500/15 flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 text-primary-400" />
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-surface-200 truncate">
+                  {user?.email}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Log Out */}
+          <div className={`flex items-center px-3 pb-2 ${collapsed ? 'justify-center' : ''}`}>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className={`flex items-center rounded-lg text-surface-400 hover:text-danger-400 hover:bg-danger-500/10 transition-colors ${collapsed ? 'p-2' : 'px-3 py-2 w-full gap-3'}`}
+              aria-label="Log out"
+            >
+              <LogOut className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="text-sm font-medium">Log Out</span>}
+            </button>
+          </div>
+
+          {/* Theme Toggle */}
+          <div className="flex items-center justify-center p-3 border-t border-surface-700/50">
             <button
               onClick={toggleTheme}
               className={`flex items-center rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors ${collapsed ? 'p-2' : 'px-3 py-2 w-full gap-3'}`}
@@ -202,6 +234,7 @@ function Layout() {
             </button>
           </div>
           
+          {/* Collapse Toggle */}
           <div className="hidden lg:flex items-center justify-center p-3 border-t border-surface-700/50">
             <button
               onClick={() => setCollapsed(!collapsed)}

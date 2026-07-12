@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
 export function useCreatePurchaseOrder() {
+  const { tenantId } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -10,6 +12,7 @@ export function useCreatePurchaseOrder() {
       const { data: purchaseOrder, error: poError } = await supabase
         .from('purchase_orders')
         .insert({
+          tenant_id: tenantId,
           vendor_id: vendorId,
           date: new Date().toISOString().split('T')[0],
           total_cost: totalCost,

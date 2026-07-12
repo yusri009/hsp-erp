@@ -1,13 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
 export function useSalesOrders(status) {
+  const { tenantId } = useAuth()
+
   return useQuery({
-    queryKey: ['sales-orders', status],
+    queryKey: ['sales-orders', tenantId, status],
     queryFn: async () => {
       let query = supabase
         .from('sales_orders')
         .select('*, customers(name)')
+        .eq('tenant_id', tenantId)
         .order('date', { ascending: false })
 
       if (status) {
@@ -18,10 +22,12 @@ export function useSalesOrders(status) {
       if (error) throw error
       return data
     },
+    enabled: !!tenantId,
   })
 }
 
 export function useCreateSalesOrder() {
+  const { tenantId } = useAuth()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -30,6 +36,7 @@ export function useCreateSalesOrder() {
       const { data: salesOrder, error: soError } = await supabase
         .from('sales_orders')
         .insert({
+          tenant_id: tenantId,
           customer_id: customerId,
           date: new Date().toISOString().split('T')[0],
           total_amount: totalAmount,
