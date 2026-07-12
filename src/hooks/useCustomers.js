@@ -48,6 +48,54 @@ export function useAddCustomer() {
   })
 }
 
+export function useUpdateCustomer() {
+  const { tenantId } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, name, contactNumber, creditLimit }) => {
+      const { data, error } = await supabase
+        .from('customers')
+        .update({
+          name,
+          contact_number: contactNumber || null,
+          credit_limit: creditLimit ? Number(creditLimit) : null,
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+    },
+  })
+}
+
+export function useDeleteCustomer() {
+  const { tenantId } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+
+      if (error) throw error
+      return true
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+    },
+  })
+}
+
 export function usePendingCheques() {
   const { tenantId } = useAuth()
 

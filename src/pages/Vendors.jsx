@@ -7,6 +7,8 @@ import {
   Loader2,
   Clock,
   Plus,
+  Edit2,
+  Trash2,
 } from 'lucide-react'
 import {
   useVendors,
@@ -14,6 +16,8 @@ import {
   useRecordVendorPayment,
   useClearVendorCheque,
   useAddVendor,
+  useUpdateVendor,
+  useDeleteVendor,
 } from '../hooks/useVendors'
 import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
@@ -28,11 +32,14 @@ function Vendors() {
   const recordPayment = useRecordVendorPayment()
   const clearCheque = useClearVendorCheque()
   const addVendor = useAddVendor()
+  const updateVendor = useUpdateVendor()
+  const deleteVendor = useDeleteVendor()
 
   // State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState(null)
+  const [editingVendor, setEditingVendor] = useState(null)
 
   // Payment Form State
   const [amount, setAmount] = useState('')
@@ -50,13 +57,30 @@ function Vendors() {
   // Pending Cheque State
   const [clearingId, setClearingId] = useState(null)
 
-  // Handle Add Vendor Click
-  const handleAddVendorClick = () => {
-    setNewVendorName('')
-    setNewVendorContact('')
+  // Handle Add/Edit Vendor Click
+  const handleAddVendorClick = (vendor = null) => {
+    setEditingVendor(vendor)
+    setNewVendorName(vendor ? vendor.name : '')
+    setNewVendorContact(vendor ? (vendor.contact_number || '') : '')
     setAddSubmitStatus(null)
     setAddErrorMessage('')
     setIsAddModalOpen(true)
+  }
+
+  // Handle Delete Vendor
+  const handleDeleteVendor = async () => {
+    if (!editingVendor) return
+    if (!window.confirm('Are you sure you want to completely delete this vendor? This might affect their past transactions and purchases.')) return
+    
+    try {
+      setAddSubmitStatus('loading')
+      await deleteVendor.mutateAsync(editingVendor.id)
+      setAddSubmitStatus('success')
+      setTimeout(() => setIsAddModalOpen(false), 1000)
+    } catch (err) {
+      setAddErrorMessage(err.message || 'Failed to delete vendor')
+      setAddSubmitStatus('error')
+    }
   }
 
   // Handle Add Vendor Submit
@@ -69,14 +93,22 @@ function Vendors() {
       return
     }
 
-    setAddSubmitStatus(null)
+    setAddSubmitStatus('loading')
     setAddErrorMessage('')
 
     try {
-      await addVendor.mutateAsync({
-        name: newVendorName,
-        contactNumber: newVendorContact,
-      })
+      if (editingVendor) {
+        await updateVendor.mutateAsync({
+          id: editingVendor.id,
+          name: newVendorName,
+          contactNumber: newVendorContact,
+        })
+      } else {
+        await addVendor.mutateAsync({
+          name: newVendorName,
+          contactNumber: newVendorContact,
+        })
+      }
 
       setAddSubmitStatus('success')
       setTimeout(() => {
@@ -84,7 +116,7 @@ function Vendors() {
       }, 1000)
     } catch (err) {
       setAddSubmitStatus('error')
-      setAddErrorMessage(err.message || 'Failed to add vendor')
+      setAddErrorMessage(err.message || 'Failed to save vendor')
     }
   }
 
@@ -180,13 +212,22 @@ function Vendors() {
       header: 'Actions',
       sortable: false,
       render: (_, row) => (
-        <button
-          onClick={() => handleIssuePayment(row)}
-          className="btn-secondary text-xs py-1.5 px-3"
-        >
-          <Banknote className="w-3.5 h-3.5" />
-          Issue Payment
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleIssuePayment(row)}
+            className="btn-secondary text-xs py-1.5 px-3"
+          >
+            <Banknote className="w-3.5 h-3.5" />
+            Issue Payment
+          </button>
+          <button
+            onClick={() => handleAddVendorClick(row)}
+            className="p-1.5 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-colors"
+            title="Edit Vendor"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ]
@@ -201,7 +242,7 @@ function Vendors() {
             Manage factories, accounts payable, and outgoing payments
           </p>
         </div>
-        <button onClick={handleAddVendorClick} className="btn-primary">
+        <button onClick={() => handleAddVendorClick()} className="btn-primary">
           <Plus className="w-4 h-4" />
           New Vendor
         </button>
@@ -377,18 +418,18 @@ function Vendors() {
         </form>
       </Modal>
 
-      {/* Add Vendor Modal */}
+      {/* Add/Edit Vendor Modal */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => !addVendor.isPending && setIsAddModalOpen(false)}
-        title="Add New Vendor"
+        onClose={() => addSubmitStatus !== 'loading' && setIsAddModalOpen(false)}
+        title={editingVendor ? "Edit Vendor" : "Add New Vendor"}
       >
         <form onSubmit={handleAddVendorSubmit} className="space-y-5">
           {/* Status Messages */}
           {addSubmitStatus === 'success' && (
             <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/20 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary-400 flex-shrink-0" />
-              <p className="text-sm text-primary-300">Vendor added successfully!</p>
+              <p className="text-sm text-primary-300">Vendor saved successfully!</p>
             </div>
           )}
           {addSubmitStatus === 'error' && (
@@ -410,7 +451,7 @@ function Vendors() {
                 onChange={(e) => setNewVendorName(e.target.value)}
                 placeholder="Enter vendor name..."
                 className="input-field"
-                disabled={addVendor.isPending || addSubmitStatus === 'success'}
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
                 autoFocus
               />
             </div>
@@ -426,34 +467,49 @@ function Vendors() {
                 onChange={(e) => setNewVendorContact(e.target.value)}
                 placeholder="Enter contact number..."
                 className="input-field"
-                disabled={addVendor.isPending || addSubmitStatus === 'success'}
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
               />
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="btn-secondary"
-              disabled={addVendor.isPending || addSubmitStatus === 'success'}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary min-w-[120px]"
-              disabled={addVendor.isPending || addSubmitStatus === 'success'}
-            >
-              {addVendor.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Vendor'
+          <div className="pt-2 flex justify-between gap-3 border-t border-surface-700/50 mt-2">
+            <div>
+              {editingVendor && (
+                <button
+                  type="button"
+                  onClick={handleDeleteVendor}
+                  className="btn-danger mt-4"
+                  disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" />
+                  Delete Vendor
+                </button>
               )}
-            </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="btn-secondary mt-4"
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary min-w-[120px] mt-4"
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+              >
+                {addSubmitStatus === 'loading' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  editingVendor ? 'Update Vendor' : 'Save Vendor'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

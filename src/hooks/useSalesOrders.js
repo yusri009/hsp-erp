@@ -88,3 +88,33 @@ export function useFulfillSalesOrder() {
     },
   })
 }
+
+export function useDeleteSalesOrder() {
+  const { tenantId } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id) => {
+      // Delete line items first to avoid foreign key constraints
+      const { error: itemsError } = await supabase
+        .from('sales_order_items')
+        .delete()
+        .eq('order_id', id)
+
+      if (itemsError) throw itemsError
+
+      // Then delete the sales order
+      const { error } = await supabase
+        .from('sales_orders')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+
+      if (error) throw error
+      return true
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-orders'] })
+    },
+  })
+}

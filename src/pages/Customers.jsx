@@ -8,8 +8,10 @@ import {
   Clock,
   ArrowRight,
   Plus,
+  Edit2,
+  Trash2,
 } from 'lucide-react'
-import { useCustomers, usePendingCheques, useRecordPayment, useClearCheque, useAddCustomer } from '../hooks/useCustomers'
+import { useCustomers, usePendingCheques, useRecordPayment, useClearCheque, useAddCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useCustomers'
 import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
 import FilterDropdown from '../components/FilterDropdown'
@@ -23,11 +25,14 @@ function Customers() {
   const recordPayment = useRecordPayment()
   const clearCheque = useClearCheque()
   const addCustomer = useAddCustomer()
+  const updateCustomer = useUpdateCustomer()
+  const deleteCustomer = useDeleteCustomer()
 
   // State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [editingCustomer, setEditingCustomer] = useState(null)
 
   // Payment Form State
   const [amount, setAmount] = useState('')
@@ -46,14 +51,31 @@ function Customers() {
   // Pending Cheque State
   const [clearingId, setClearingId] = useState(null)
 
-  // Handle Add Customer Click
-  const handleAddCustomerClick = () => {
-    setNewCustomerName('')
-    setNewCustomerContact('')
-    setNewCustomerCreditLimit('')
+  // Handle Add/Edit Customer Click
+  const handleAddCustomerClick = (customer = null) => {
+    setEditingCustomer(customer)
+    setNewCustomerName(customer ? customer.name : '')
+    setNewCustomerContact(customer ? (customer.contact_number || '') : '')
+    setNewCustomerCreditLimit(customer ? (customer.credit_limit || '') : '')
     setAddSubmitStatus(null)
     setAddErrorMessage('')
     setIsAddModalOpen(true)
+  }
+
+  // Handle Delete Customer
+  const handleDeleteCustomer = async () => {
+    if (!editingCustomer) return
+    if (!window.confirm('Are you sure you want to completely delete this customer? This might affect their past transactions and sales.')) return
+    
+    try {
+      setAddSubmitStatus('loading')
+      await deleteCustomer.mutateAsync(editingCustomer.id)
+      setAddSubmitStatus('success')
+      setTimeout(() => setIsAddModalOpen(false), 1000)
+    } catch (err) {
+      setAddErrorMessage(err.message || 'Failed to delete customer')
+      setAddSubmitStatus('error')
+    }
   }
 
   // Handle Add Customer Submit
@@ -66,15 +88,24 @@ function Customers() {
       return
     }
 
-    setAddSubmitStatus(null)
+    setAddSubmitStatus('loading')
     setAddErrorMessage('')
 
     try {
-      await addCustomer.mutateAsync({
-        name: newCustomerName,
-        contactNumber: newCustomerContact,
-        creditLimit: newCustomerCreditLimit,
-      })
+      if (editingCustomer) {
+        await updateCustomer.mutateAsync({
+          id: editingCustomer.id,
+          name: newCustomerName,
+          contactNumber: newCustomerContact,
+          creditLimit: newCustomerCreditLimit,
+        })
+      } else {
+        await addCustomer.mutateAsync({
+          name: newCustomerName,
+          contactNumber: newCustomerContact,
+          creditLimit: newCustomerCreditLimit,
+        })
+      }
 
       setAddSubmitStatus('success')
       setTimeout(() => {
@@ -82,7 +113,7 @@ function Customers() {
       }, 1000)
     } catch (err) {
       setAddSubmitStatus('error')
-      setAddErrorMessage(err.message || 'Failed to add customer')
+      setAddErrorMessage(err.message || 'Failed to save customer')
     }
   }
 
@@ -193,13 +224,22 @@ function Customers() {
       header: 'Actions',
       sortable: false,
       render: (_, row) => (
-        <button
-          onClick={() => handleReceivePayment(row)}
-          className="btn-secondary text-xs py-1.5 px-3"
-        >
-          <Banknote className="w-3.5 h-3.5" />
-          Receive Payment
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleReceivePayment(row)}
+            className="btn-secondary text-xs py-1.5 px-3"
+          >
+            <Banknote className="w-3.5 h-3.5" />
+            Receive Payment
+          </button>
+          <button
+            onClick={() => handleAddCustomerClick(row)}
+            className="p-1.5 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-colors"
+            title="Edit Customer"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ]
@@ -214,7 +254,7 @@ function Customers() {
             Manage customer accounts and receive payments
           </p>
         </div>
-        <button onClick={handleAddCustomerClick} className="btn-primary">
+        <button onClick={() => handleAddCustomerClick()} className="btn-primary">
           <Plus className="w-4 h-4" />
           New Customer
         </button>
@@ -390,18 +430,18 @@ function Customers() {
         </form>
       </Modal>
 
-      {/* Add Customer Modal */}
+      {/* Add/Edit Customer Modal */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => !addCustomer.isPending && setIsAddModalOpen(false)}
-        title="Add New Customer"
+        onClose={() => addSubmitStatus !== 'loading' && setIsAddModalOpen(false)}
+        title={editingCustomer ? "Edit Customer" : "Add New Customer"}
       >
         <form onSubmit={handleAddCustomerSubmit} className="space-y-5">
           {/* Status Messages */}
           {addSubmitStatus === 'success' && (
             <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/20 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary-400 flex-shrink-0" />
-              <p className="text-sm text-primary-300">Customer added successfully!</p>
+              <p className="text-sm text-primary-300">Customer saved successfully!</p>
             </div>
           )}
           {addSubmitStatus === 'error' && (
@@ -423,7 +463,7 @@ function Customers() {
                 onChange={(e) => setNewCustomerName(e.target.value)}
                 placeholder="Enter customer name..."
                 className="input-field"
-                disabled={addCustomer.isPending || addSubmitStatus === 'success'}
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
                 autoFocus
               />
             </div>
@@ -439,7 +479,7 @@ function Customers() {
                 onChange={(e) => setNewCustomerContact(e.target.value)}
                 placeholder="Enter contact number..."
                 className="input-field"
-                disabled={addCustomer.isPending || addSubmitStatus === 'success'}
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
               />
             </div>
 
@@ -458,35 +498,50 @@ function Customers() {
                   onChange={(e) => setNewCustomerCreditLimit(e.target.value)}
                   placeholder="0.00"
                   className="input-field pl-7"
-                  disabled={addCustomer.isPending || addSubmitStatus === 'success'}
+                  disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
                 />
               </div>
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="btn-secondary"
-              disabled={addCustomer.isPending || addSubmitStatus === 'success'}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary min-w-[120px]"
-              disabled={addCustomer.isPending || addSubmitStatus === 'success'}
-            >
-              {addCustomer.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Customer'
+          <div className="pt-2 flex justify-between gap-3 border-t border-surface-700/50 mt-2">
+            <div>
+              {editingCustomer && (
+                <button
+                  type="button"
+                  onClick={handleDeleteCustomer}
+                  className="btn-danger mt-4"
+                  disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" />
+                  Delete Customer
+                </button>
               )}
-            </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="btn-secondary mt-4"
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary min-w-[120px] mt-4"
+                disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+              >
+                {addSubmitStatus === 'loading' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  editingCustomer ? 'Update Customer' : 'Save Customer'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

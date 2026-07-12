@@ -8,8 +8,9 @@ import {
   Loader2,
   PackageCheck,
   AlertCircle,
+  Trash2,
 } from 'lucide-react'
-import { useSalesOrders, useFulfillSalesOrder } from '../hooks/useSalesOrders'
+import { useSalesOrders, useFulfillSalesOrder, useDeleteSalesOrder } from '../hooks/useSalesOrders'
 import DataTable from '../components/DataTable'
 import StatCard from '../components/StatCard'
 
@@ -27,6 +28,7 @@ function SalesDashboard() {
   const { data: allOrders, isLoading: allLoading } = useSalesOrders()
   const { data: filteredOrders, isLoading: filteredLoading } = useSalesOrders(activeTab || undefined)
   const fulfillOrder = useFulfillSalesOrder()
+  const deleteOrder = useDeleteSalesOrder()
 
   const pendingCount = allOrders?.filter((o) => o.status === 'Pending').length || 0
   const deliveredCount = allOrders?.filter((o) => o.status === 'Delivered').length || 0
@@ -40,6 +42,16 @@ function SalesDashboard() {
       console.error('Failed to fulfill order:', err)
     } finally {
       setFulfillingId(null)
+    }
+  }
+
+  const handleDelete = async (orderId) => {
+    if (!window.confirm('Are you sure you want to completely delete this pending sales order?')) return
+    try {
+      await deleteOrder.mutateAsync(orderId)
+    } catch (err) {
+      console.error('Failed to delete order:', err)
+      alert('Failed to delete order: ' + (err.message || 'Unknown error'))
     }
   }
 
@@ -125,31 +137,45 @@ function SalesDashboard() {
       render: (_, row) => {
         if (row.status !== 'Pending') return null
         const isLoading = fulfillingId === row.id
+        const isDeleting = deleteOrder.isPending
         return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleFulfill(row.id)
-            }}
-            disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
-              rounded-lg transition-all duration-200 cursor-pointer
-              bg-primary-500/10 text-primary-400 border border-primary-500/20
-              hover:bg-primary-500/20 hover:border-primary-500/40
-              disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              <>
-                <PackageCheck className="w-3.5 h-3.5" />
-                Mark as Delivered
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleFulfill(row.id)
+              }}
+              disabled={isLoading || isDeleting}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
+                rounded-lg transition-all duration-200 cursor-pointer
+                bg-primary-500/10 text-primary-400 border border-primary-500/20
+                hover:bg-primary-500/20 hover:border-primary-500/40
+                disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <PackageCheck className="w-3.5 h-3.5" />
+                  Mark as Delivered
+                </>
+              )}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDelete(row.id)
+              }}
+              disabled={isLoading || isDeleting}
+              className="p-1.5 text-surface-400 hover:text-danger-400 hover:bg-danger-500/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Delete Order"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         )
       },
     },

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, CheckCircle2, AlertCircle, Loader2, Sparkles } from 'lucide-react'
+import { Plus, CheckCircle2, AlertCircle, Loader2, Sparkles, Edit2, Trash2 } from 'lucide-react'
 import DataTable from '../components/DataTable'
 import FilterDropdown from '../components/FilterDropdown'
 import Modal from '../components/Modal'
@@ -8,10 +8,13 @@ import {
   useProductSizes,
   useProductColors,
   useAddProduct,
+  useUpdateProduct,
+  useDeleteProduct,
 } from '../hooks/useProducts'
-import { useCategories, useAddCategory } from '../hooks/useCategories'
+import { useCategories, useAddCategory, useUpdateCategory, useDeleteCategory } from '../hooks/useCategories'
 
 function InventoryDashboard() {
+  const [activeTab, setActiveTab] = useState('products')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSize, setSelectedSize] = useState('')
   const [selectedColor, setSelectedColor] = useState('')
@@ -29,10 +32,15 @@ function InventoryDashboard() {
 
   // Mutations
   const addCategory = useAddCategory()
+  const updateCategory = useUpdateCategory()
+  const deleteCategory = useDeleteCategory()
   const addProduct = useAddProduct()
+  const updateProduct = useUpdateProduct()
+  const deleteProduct = useDeleteProduct()
 
   // --- Add Category State ---
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState(null)
   const [newCatName, setNewCatName] = useState('')
   const [newCatDesc, setNewCatDesc] = useState('')
   const [catSubmitStatus, setCatSubmitStatus] = useState(null)
@@ -40,6 +48,7 @@ function InventoryDashboard() {
 
   // --- Add Product State ---
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
   const [newProdCategory, setNewProdCategory] = useState('')
   const [newProdSku, setNewProdSku] = useState('')
   const [newProdSize, setNewProdSize] = useState('')
@@ -54,12 +63,28 @@ function InventoryDashboard() {
   // Handlers
   // -------------------------
 
-  const openCategoryModal = () => {
-    setNewCatName('')
-    setNewCatDesc('')
+  const openCategoryModal = (category = null) => {
+    setEditingCategory(category)
+    setNewCatName(category ? category.name : '')
+    setNewCatDesc(category ? (category.description || '') : '')
     setCatSubmitStatus(null)
     setCatError('')
     setIsCategoryModalOpen(true)
+  }
+
+  const handleDeleteCategory = async () => {
+    if (!editingCategory) return
+    if (!window.confirm('Are you sure you want to completely delete this category? This might also affect related products.')) return
+    
+    try {
+      setCatSubmitStatus('loading')
+      await deleteCategory.mutateAsync(editingCategory.id)
+      setCatSubmitStatus('success')
+      setTimeout(() => setIsCategoryModalOpen(false), 1000)
+    } catch (err) {
+      setCatError(err.message || 'Failed to delete category')
+      setCatSubmitStatus('error')
+    }
   }
 
   const handleAddCategorySubmit = async (e) => {
@@ -72,26 +97,56 @@ function InventoryDashboard() {
 
     try {
       setCatSubmitStatus('loading')
-      await addCategory.mutateAsync({ name: newCatName, description: newCatDesc })
+      if (editingCategory) {
+        await updateCategory.mutateAsync({ id: editingCategory.id, name: newCatName, description: newCatDesc })
+      } else {
+        await addCategory.mutateAsync({ name: newCatName, description: newCatDesc })
+      }
       setCatSubmitStatus('success')
       setTimeout(() => setIsCategoryModalOpen(false), 1000)
     } catch (err) {
-      setCatError(err.message || 'Failed to add category')
+      setCatError(err.message || 'Failed to save category')
       setCatSubmitStatus('error')
     }
   }
 
-  const openProductModal = () => {
-    setNewProdCategory('')
-    setNewProdSku('')
-    setNewProdSize('')
-    setNewProdColor('')
-    setNewProdPieces('')
-    setNewProdAvgCost('')
-    setNewProdSellingPrice('')
+  const openProductModal = (product = null) => {
+    setEditingProduct(product)
+    if (product) {
+      setNewProdCategory(product.category_id || '')
+      setNewProdSku(product.sku || '')
+      setNewProdSize(product.size || '')
+      setNewProdColor(product.color || '')
+      setNewProdPieces(product.pieces_per_packet || '')
+      setNewProdAvgCost(product.avg_cost || '')
+      setNewProdSellingPrice(product.selling_price || '')
+    } else {
+      setNewProdCategory('')
+      setNewProdSku('')
+      setNewProdSize('')
+      setNewProdColor('')
+      setNewProdPieces('')
+      setNewProdAvgCost('')
+      setNewProdSellingPrice('')
+    }
     setProdSubmitStatus(null)
     setProdError('')
     setIsProductModalOpen(true)
+  }
+
+  const handleDeleteProduct = async () => {
+    if (!editingProduct) return
+    if (!window.confirm('Are you sure you want to completely delete this product?')) return
+    
+    try {
+      setProdSubmitStatus('loading')
+      await deleteProduct.mutateAsync(editingProduct.id)
+      setProdSubmitStatus('success')
+      setTimeout(() => setIsProductModalOpen(false), 1000)
+    } catch (err) {
+      setProdError(err.message || 'Failed to delete product')
+      setProdSubmitStatus('error')
+    }
   }
 
   const handleAutoGenerateSku = () => {
@@ -123,15 +178,28 @@ function InventoryDashboard() {
 
     try {
       setProdSubmitStatus('loading')
-      await addProduct.mutateAsync({
-        categoryId: newProdCategory,
-        sku: newProdSku,
-        size: newProdSize,
-        color: newProdColor,
-        piecesPerPacket: newProdPieces,
-        avgCost: newProdAvgCost,
-        sellingPrice: newProdSellingPrice,
-      })
+      if (editingProduct) {
+        await updateProduct.mutateAsync({
+          id: editingProduct.id,
+          categoryId: newProdCategory,
+          sku: newProdSku,
+          size: newProdSize,
+          color: newProdColor,
+          piecesPerPacket: newProdPieces,
+          avgCost: newProdAvgCost,
+          sellingPrice: newProdSellingPrice,
+        })
+      } else {
+        await addProduct.mutateAsync({
+          categoryId: newProdCategory,
+          sku: newProdSku,
+          size: newProdSize,
+          color: newProdColor,
+          piecesPerPacket: newProdPieces,
+          avgCost: newProdAvgCost,
+          sellingPrice: newProdSellingPrice,
+        })
+      }
       setProdSubmitStatus('success')
       setTimeout(() => setIsProductModalOpen(false), 1000)
     } catch (err) {
@@ -150,6 +218,39 @@ function InventoryDashboard() {
 
   const sizeOptions = sizes?.map((s) => ({ value: s, label: s })) || []
   const colorOptions = colors?.map((c) => ({ value: c, label: c })) || []
+
+  const categoryColumns = [
+    {
+      key: 'name',
+      header: 'Category Name',
+      sortable: true,
+      render: (val) => <span className="font-semibold text-surface-100">{val}</span>,
+    },
+    {
+      key: 'description',
+      header: 'Description',
+      render: (val) => <span className="text-surface-300">{val || '—'}</span>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      sortable: false,
+      render: (_, row) => (
+        <div className="flex items-center justify-end">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              openCategoryModal(row)
+            }}
+            className="p-1.5 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-colors"
+            title="Edit Category"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
+  ]
 
   const columns = [
     {
@@ -222,6 +323,25 @@ function InventoryDashboard() {
         )
       },
     },
+    {
+      key: 'actions',
+      header: '',
+      sortable: false,
+      render: (_, row) => (
+        <div className="flex items-center justify-end">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              openProductModal(row)
+            }}
+            className="p-1.5 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-colors"
+            title="Edit Product"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
   ]
 
   return (
@@ -234,89 +354,125 @@ function InventoryDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button onClick={openCategoryModal} className="btn-secondary whitespace-nowrap">
-            <Plus className="w-4 h-4" />
-            Add Category
-          </button>
-          <button onClick={openProductModal} className="btn-primary whitespace-nowrap">
-            <Plus className="w-4 h-4" />
-            Add Product
-          </button>
+          {activeTab === 'categories' ? (
+            <button onClick={() => openCategoryModal()} className="btn-primary whitespace-nowrap">
+              <Plus className="w-4 h-4" />
+              Add Category
+            </button>
+          ) : (
+            <button onClick={() => openProductModal()} className="btn-primary whitespace-nowrap">
+              <Plus className="w-4 h-4" />
+              Add Product
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="glass-card p-4 flex flex-wrap gap-4 items-end animate-slide-up">
-        <FilterDropdown
-          label="Category"
-          value={selectedCategory}
-          onChange={(val) => {
-            setSelectedCategory(val)
-            setSelectedSize('')
-            setSelectedColor('')
-          }}
-          options={categoryOptions}
-          isLoading={categoriesLoading}
-        />
-
-        <FilterDropdown
-          label="Size"
-          value={selectedSize}
-          onChange={(val) => {
-            setSelectedSize(val)
-            setSelectedColor('')
-          }}
-          options={sizeOptions}
-          disabled={!selectedCategory || sizeOptions.length === 0}
-        />
-
-        <FilterDropdown
-          label="Color"
-          value={selectedColor}
-          onChange={setSelectedColor}
-          options={colorOptions}
-          disabled={!selectedCategory || colorOptions.length === 0}
-        />
-
-        {(selectedCategory || selectedSize || selectedColor) && (
-          <button
-            onClick={() => {
-              setSelectedCategory('')
-              setSelectedSize('')
-              setSelectedColor('')
-            }}
-            className="text-xs text-surface-400 hover:text-surface-200 underline underline-offset-2 mb-2 ml-2 transition-colors"
-          >
-            Clear Filters
-          </button>
-        )}
+      {/* Tabs */}
+      <div className="flex border-b border-surface-700/50 mb-6">
+        <button
+          onClick={() => setActiveTab('products')}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === 'products' ? 'border-primary-500 text-primary-400' : 'border-transparent text-surface-400 hover:text-surface-200'
+          }`}
+        >
+          Products
+        </button>
+        <button
+          onClick={() => setActiveTab('categories')}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === 'categories' ? 'border-primary-500 text-primary-400' : 'border-transparent text-surface-400 hover:text-surface-200'
+          }`}
+        >
+          Categories
+        </button>
       </div>
 
-      {/* Data Table */}
-      <div className="animate-slide-up" style={{ animationDelay: '0.05s' }}>
-        <DataTable
-          columns={columns}
-          data={products}
-          isLoading={productsLoading}
-          emptyMessage={
-            selectedCategory || selectedSize || selectedColor
-              ? 'No products found matching these filters.'
-              : 'No products in inventory.'
-          }
-        />
-      </div>
+      {activeTab === 'products' ? (
+        <>
+          {/* Filters */}
+          <div className="glass-card p-4 flex flex-wrap gap-4 items-end animate-slide-up">
+            <FilterDropdown
+              label="Category"
+              value={selectedCategory}
+              onChange={(val) => {
+                setSelectedCategory(val)
+                setSelectedSize('')
+                setSelectedColor('')
+              }}
+              options={categoryOptions}
+              isLoading={categoriesLoading}
+            />
 
-      {/* --- ADD CATEGORY MODAL --- */}
+            <FilterDropdown
+              label="Size"
+              value={selectedSize}
+              onChange={(val) => {
+                setSelectedSize(val)
+                setSelectedColor('')
+              }}
+              options={sizeOptions}
+              disabled={!selectedCategory || sizeOptions.length === 0}
+            />
+
+            <FilterDropdown
+              label="Color"
+              value={selectedColor}
+              onChange={setSelectedColor}
+              options={colorOptions}
+              disabled={!selectedCategory || colorOptions.length === 0}
+            />
+
+            {(selectedCategory || selectedSize || selectedColor) && (
+              <button
+                onClick={() => {
+                  setSelectedCategory('')
+                  setSelectedSize('')
+                  setSelectedColor('')
+                }}
+                className="text-xs text-surface-400 hover:text-surface-200 underline underline-offset-2 mb-2 ml-2 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+
+          {/* Data Table */}
+          <div className="animate-slide-up" style={{ animationDelay: '0.05s' }}>
+            <DataTable
+              columns={columns}
+              data={products}
+              isLoading={productsLoading}
+              emptyMessage={
+                selectedCategory || selectedSize || selectedColor
+                  ? 'No products found matching these filters.'
+                  : 'No products in inventory.'
+              }
+            />
+          </div>
+        </>
+      ) : (
+        <div className="animate-slide-up">
+          <DataTable
+            columns={categoryColumns}
+            data={categories}
+            isLoading={categoriesLoading}
+            emptyMessage="No categories found."
+          />
+        </div>
+      )}
+
+      {/* --- ADD/EDIT CATEGORY MODAL --- */}
       <Modal
         isOpen={isCategoryModalOpen}
         onClose={() => catSubmitStatus !== 'loading' && setIsCategoryModalOpen(false)}
-        title="Add New Category"
+        title={editingCategory ? "Edit Category" : "Add New Category"}
       >
         <form onSubmit={handleAddCategorySubmit} className="space-y-5">
           {catSubmitStatus === 'success' && (
             <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/20 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary-400 flex-shrink-0" />
-              <p className="text-sm text-primary-300">Category added successfully!</p>
+              <p className="text-sm text-primary-300">Category saved successfully!</p>
             </div>
           )}
           {catSubmitStatus === 'error' && (
@@ -355,44 +511,59 @@ function InventoryDashboard() {
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsCategoryModalOpen(false)}
-              className="btn-secondary"
-              disabled={catSubmitStatus === 'loading' || catSubmitStatus === 'success'}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary min-w-[120px]"
-              disabled={catSubmitStatus === 'loading' || catSubmitStatus === 'success'}
-            >
-              {catSubmitStatus === 'loading' ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Category'
+          <div className="pt-2 flex justify-between gap-3 border-t border-surface-700/50 mt-2">
+            <div>
+              {editingCategory && (
+                <button
+                  type="button"
+                  onClick={handleDeleteCategory}
+                  className="btn-danger mt-4"
+                  disabled={catSubmitStatus === 'loading' || catSubmitStatus === 'success'}
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" />
+                  Delete Category
+                </button>
               )}
-            </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="btn-secondary mt-4"
+                disabled={catSubmitStatus === 'loading' || catSubmitStatus === 'success'}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary min-w-[120px] mt-4"
+                disabled={catSubmitStatus === 'loading' || catSubmitStatus === 'success'}
+              >
+                {catSubmitStatus === 'loading' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  editingCategory ? 'Update Category' : 'Save Category'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
 
-      {/* --- ADD PRODUCT MODAL --- */}
+      {/* --- ADD/EDIT PRODUCT MODAL --- */}
       <Modal
         isOpen={isProductModalOpen}
         onClose={() => prodSubmitStatus !== 'loading' && setIsProductModalOpen(false)}
-        title="Add New Product"
+        title={editingProduct ? "Edit Product" : "Add New Product"}
       >
         <form onSubmit={handleAddProductSubmit} className="space-y-5">
           {prodSubmitStatus === 'success' && (
             <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/20 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary-400 flex-shrink-0" />
-              <p className="text-sm text-primary-300">Product added successfully!</p>
+              <p className="text-sm text-primary-300">Product saved successfully!</p>
             </div>
           )}
           {prodSubmitStatus === 'error' && (
@@ -524,29 +695,44 @@ function InventoryDashboard() {
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-3 border-t border-surface-700/50 mt-2">
-            <button
-              type="button"
-              onClick={() => setIsProductModalOpen(false)}
-              className="btn-secondary mt-4"
-              disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary min-w-[120px] mt-4"
-              disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
-            >
-              {prodSubmitStatus === 'loading' ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Product'
+          <div className="pt-2 flex justify-between gap-3 border-t border-surface-700/50 mt-2">
+            <div>
+              {editingProduct && (
+                <button
+                  type="button"
+                  onClick={handleDeleteProduct}
+                  className="btn-danger mt-4"
+                  disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" />
+                  Delete Product
+                </button>
               )}
-            </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(false)}
+                className="btn-secondary mt-4"
+                disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary min-w-[120px] mt-4"
+                disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
+              >
+                {prodSubmitStatus === 'loading' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  editingProduct ? 'Update Product' : 'Save Product'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

@@ -136,3 +136,55 @@ export function useAddProduct() {
     },
   })
 }
+
+export function useUpdateProduct() {
+  const { tenantId } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, categoryId, sku, size, color, piecesPerPacket, avgCost, sellingPrice }) => {
+      const { data, error } = await supabase
+        .from('products')
+        .update({
+          category_id: categoryId,
+          sku: sku || null,
+          size: size || null,
+          color: color || null,
+          pieces_per_packet: piecesPerPacket ? Number(piecesPerPacket) : null,
+          avg_cost: avgCost ? Number(avgCost) : 0,
+          selling_price: sellingPrice ? Number(sellingPrice) : 0,
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}
+
+export function useDeleteProduct() {
+  const { tenantId } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (productId) => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId)
+        .eq('tenant_id', tenantId)
+
+      if (error) throw error
+      return true
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}

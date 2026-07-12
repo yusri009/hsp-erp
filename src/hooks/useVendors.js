@@ -47,6 +47,53 @@ export function useAddVendor() {
   })
 }
 
+export function useUpdateVendor() {
+  const { tenantId } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, name, contactNumber }) => {
+      const { data, error } = await supabase
+        .from('vendors')
+        .update({
+          name,
+          contact_number: contactNumber || null,
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendors'] })
+    },
+  })
+}
+
+export function useDeleteVendor() {
+  const { tenantId } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('vendors')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+
+      if (error) throw error
+      return true
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendors'] })
+    },
+  })
+}
+
 export function usePendingVendorCheques() {
   const { tenantId } = useAuth()
 
