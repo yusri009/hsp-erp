@@ -25,7 +25,7 @@ function ReceiveStock() {
   const [vendorId, setVendorId] = useState('')
   const [invoiceTotal, setInvoiceTotal] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const [lineItems, setLineItems] = useState([{ productId: '', quantity: '' }])
+  const [lineItems, setLineItems] = useState([{ productId: '', quantity: '', unit_cost: '' }])
   const [submitStatus, setSubmitStatus] = useState(null) // null | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -49,7 +49,7 @@ function ReceiveStock() {
 
   // Line item handlers
   const addLineItem = () => {
-    setLineItems((prev) => [...prev, { productId: '', quantity: '' }])
+    setLineItems((prev) => [...prev, { productId: '', quantity: '', unit_cost: '' }])
   }
 
   const removeLineItem = (index) => {
@@ -73,7 +73,7 @@ function ReceiveStock() {
     vendorId &&
     invoiceTotal &&
     dueDate &&
-    lineItems.every((item) => item.productId && item.quantity && parseInt(item.quantity, 10) > 0)
+    lineItems.every((item) => item.productId && item.quantity && parseInt(item.quantity, 10) > 0 && item.unit_cost && parseFloat(item.unit_cost) >= 0)
 
   // Submit handler
   const handleSubmit = async (e) => {
@@ -91,6 +91,7 @@ function ReceiveStock() {
         lineItems: lineItems.map((item) => ({
           productId: item.productId,
           quantity: parseInt(item.quantity, 10),
+          unit_cost: parseFloat(item.unit_cost),
         })),
       })
 
@@ -101,7 +102,7 @@ function ReceiveStock() {
         setVendorId('')
         setInvoiceTotal('')
         setDueDate('')
-        setLineItems([{ productId: '', quantity: '' }])
+        setLineItems([{ productId: '', quantity: '', unit_cost: '' }])
         setSubmitStatus(null)
       }, 3000)
     } catch (err) {
@@ -242,8 +243,29 @@ function ReceiveStock() {
                   />
                 </div>
 
+                {/* Unit Cost */}
+                <div className="w-full sm:w-32">
+                  {index === 0 && (
+                    <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5">
+                      Unit Cost
+                    </label>
+                  )}
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.unit_cost}
+                      onChange={(e) => updateLineItem(index, 'unit_cost', e.target.value)}
+                      placeholder="0.00"
+                      className="input-field pl-8"
+                    />
+                  </div>
+                </div>
+
                 {/* Quantity */}
-                <div className="w-full sm:w-44">
+                <div className="w-full sm:w-32">
                   {index === 0 && (
                     <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5">
                       Packets

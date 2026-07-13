@@ -89,6 +89,25 @@ export function useFulfillSalesOrder() {
   })
 }
 
+export function useUnfulfillSalesOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (orderId) => {
+      const { data, error } = await supabase.rpc('unfulfill_sales_order', {
+        order_id: orderId,
+      })
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}
+
 export function useDeleteSalesOrder() {
   const { tenantId } = useAuth()
   const queryClient = useQueryClient()

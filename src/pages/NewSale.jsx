@@ -149,7 +149,7 @@ function NewSale() {
         <div>
           <h1 className="text-2xl font-bold text-surface-50 flex items-center gap-2.5">
             <ShoppingCart className="w-6 h-6 text-primary-400" />
-            New Sale
+            New Order
           </h1>
           <p className="text-sm text-surface-400 mt-0.5">
             Quick order entry — quantities in <span className="font-semibold text-primary-400">Packets</span>

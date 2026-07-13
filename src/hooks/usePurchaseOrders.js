@@ -24,7 +24,21 @@ export function useCreatePurchaseOrder() {
 
       if (poError) throw poError
 
-      // 2. Update stock quantities for each line item
+      // 2. Insert line items
+      const poItems = lineItems.map((item) => ({
+        purchase_order_id: purchaseOrder.id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        unit_cost: item.unit_cost
+      }))
+
+      const { error: itemsError } = await supabase
+        .from('purchase_order_items')
+        .insert(poItems)
+
+      if (itemsError) throw itemsError
+
+      // 3. Update stock quantities for each line item
       for (const item of lineItems) {
         // Get current stock
         const { data: product, error: fetchError } = await supabase

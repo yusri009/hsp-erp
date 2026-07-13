@@ -16,6 +16,7 @@ import {
   LogOut,
   User,
   FileBarChart2,
+  Wallet,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
@@ -26,6 +27,7 @@ const navItems = [
   { path: '/sales', label: 'Sales', icon: ShoppingCart },
   { path: '/customers', label: 'Customers', icon: Users },
   { path: '/vendors', label: 'Vendors', icon: Factory },
+  { path: '/expenses', label: 'Expenses', icon: Wallet },
   { path: '/reports', label: 'Reports', icon: FileBarChart2 },
 ]
 
@@ -34,14 +36,14 @@ const inventorySubItems = [
 ]
 
 const salesSubItems = [
-  { path: '/sales/new', label: 'New Sale', icon: FilePlus },
+  { path: '/sales/new', label: 'New Order', icon: FilePlus },
 ]
 
 function Layout() {
   const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  
+
   // Theme state
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -235,7 +237,7 @@ function Layout() {
               {!collapsed && <span className="text-sm font-medium">{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
             </button>
           </div>
-          
+
           {/* Collapse Toggle */}
           <div className="hidden lg:flex items-center justify-center p-3 border-t border-surface-700/50">
             <button

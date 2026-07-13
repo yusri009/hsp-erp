@@ -8,6 +8,7 @@ import SalesDashboard from './pages/SalesDashboard'
 import NewSale from './pages/NewSale'
 import Customers from './pages/Customers'
 import Vendors from './pages/Vendors'
+import Expenses from './pages/Expenses'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -40,6 +41,7 @@ function App() {
           <Route path="/sales/new" element={<NewSale />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/vendors" element={<Vendors />} />
+          <Route path="/expenses" element={<Expenses />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
       </Route>

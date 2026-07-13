@@ -11,11 +11,12 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import StatCard from '../components/StatCard'
-import { useDashboardMetrics } from '../hooks/useDashboard'
+import { useDashboardMetrics, useDashboardProfit } from '../hooks/useDashboard'
 import { useLowStockProducts } from '../hooks/useProducts'
 
 function Dashboard() {
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics()
+  const { data: profit, isLoading: profitLoading } = useDashboardProfit()
   const { data: lowStockItems, isLoading: lowStockLoading } = useLowStockProducts(10)
 
   return (
@@ -68,6 +69,67 @@ function Dashboard() {
         />
       </div>
 
+      {/* Profit Summary Cards */}
+      <div>
+        <h2 className="text-sm font-semibold text-surface-300 uppercase tracking-wider mb-4">
+          Profit Summary (Delivered Orders)
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            label="Total Revenue"
+            value={
+              profitLoading
+                ? '...'
+                : `Rs.${Number(profit?.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+            }
+            icon={TrendingUp}
+            accent="info"
+          />
+          <StatCard
+            label="Total Profit"
+            value={
+              profitLoading
+                ? '...'
+                : `Rs.${Number(profit?.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+            }
+            icon={IndianRupee}
+            accent="primary"
+          />
+          <StatCard
+            label="Expenses"
+            value={
+              profitLoading
+                ? '...'
+                : `Rs.${Number(profit?.total_expenses || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+            }
+            icon={CreditCard}
+            accent="warning"
+          />
+          {/* Visually Distinct Net Profit Card */}
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-900/20 border-2 border-emerald-500/30 p-5 animate-slide-up shadow-[0_0_20px_rgba(16,185,129,0.08)] transition-all hover:border-emerald-500/50">
+            <div className="absolute top-0 right-0 p-3 opacity-[0.07] pointer-events-none">
+              <IndianRupee className="w-20 h-20 text-emerald-400" />
+            </div>
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-emerald-400" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/80 bg-emerald-500/10 px-2 py-1 rounded-full">
+                Bottom Line
+              </span>
+            </div>
+            <div className="mt-4 relative z-10">
+              <h3 className="text-xs font-semibold text-emerald-300/80 uppercase tracking-wider">
+                Net Profit
+              </h3>
+              <p className="mt-1 text-2xl font-bold text-emerald-400 tabular-nums">
+                {profitLoading ? '...' : `Rs.${Number(profit?.net_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div>
         <h2 className="text-sm font-semibold text-surface-300 uppercase tracking-wider mb-4">
@@ -82,7 +144,7 @@ function Dashboard() {
               <Plus className="w-6 h-6 text-primary-400" />
             </div>
             <h3 className="text-base font-semibold text-surface-100 group-hover:text-primary-300 transition-colors">
-              New Sale
+              New Order
             </h3>
             <p className="text-xs text-surface-400 mt-1 max-w-[200px]">
               Quick order entry for WhatsApp customers
