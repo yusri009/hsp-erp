@@ -120,12 +120,13 @@ export function useRecordVendorPayment() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ vendorId, amount, paymentMethod, chequeNumber }) => {
+    mutationFn: async ({ vendorId, amount, paymentMethod, chequeNumber, accountId }) => {
       const { data, error } = await supabase.rpc('record_vendor_payment', {
         p_vendor_id: vendorId,
         p_amount: amount,
         p_payment_method: paymentMethod,
         p_cheque_number: chequeNumber || null,
+        p_account_id: accountId,
       })
 
       if (error) throw error
@@ -142,10 +143,11 @@ export function useClearVendorCheque() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ transactionId, vendorId }) => {
+    mutationFn: async ({ transactionId, vendorId, accountId }) => {
       const { data, error } = await supabase.rpc('clear_vendor_cheque', {
         p_transaction_id: transactionId,
         p_vendor_id: vendorId,
+        p_account_id: accountId,
       })
 
       if (error) throw error

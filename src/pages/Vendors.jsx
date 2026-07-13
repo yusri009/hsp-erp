@@ -19,6 +19,7 @@ import {
   useUpdateVendor,
   useDeleteVendor,
 } from '../hooks/useVendors'
+import { useBankAccounts } from '../hooks/useBankAccounts'
 import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
 import FilterDropdown from '../components/FilterDropdown'
@@ -27,6 +28,7 @@ function Vendors() {
   // Queries
   const { data: vendors, isLoading: vendorsLoading } = useVendors()
   const { data: pendingCheques, isLoading: chequesLoading } = usePendingVendorCheques()
+  const { data: bankAccounts } = useBankAccounts()
 
   // Mutations
   const recordPayment = useRecordVendorPayment()
@@ -45,6 +47,7 @@ function Vendors() {
   const [amount, setAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [chequeNumber, setChequeNumber] = useState('')
+  const [accountId, setAccountId] = useState('')
   const [paymentSubmitStatus, setPaymentSubmitStatus] = useState(null)
   const [paymentErrorMessage, setPaymentErrorMessage] = useState('')
 
@@ -56,6 +59,7 @@ function Vendors() {
 
   // Pending Cheque State
   const [clearingId, setClearingId] = useState(null)
+  const [clearingAccountId, setClearingAccountId] = useState('')
 
   // Handle Add/Edit Vendor Click
   const handleAddVendorClick = (vendor = null) => {
@@ -126,6 +130,7 @@ function Vendors() {
     setAmount('')
     setPaymentMethod('Cash')
     setChequeNumber('')
+    setAccountId('')
     setPaymentSubmitStatus(null)
     setPaymentErrorMessage('')
     setIsPaymentModalOpen(true)
@@ -147,6 +152,12 @@ function Vendors() {
       return
     }
 
+    if (!accountId) {
+      setPaymentErrorMessage('Please select a bank account to pay from.')
+      setPaymentSubmitStatus('error')
+      return
+    }
+
     setPaymentSubmitStatus(null)
     setPaymentErrorMessage('')
 
@@ -156,6 +167,7 @@ function Vendors() {
         amount: Number(amount),
         paymentMethod,
         chequeNumber: paymentMethod === 'Cheque' ? chequeNumber : null,
+        accountId: accountId,
       })
 
       setPaymentSubmitStatus('success')
@@ -169,12 +181,18 @@ function Vendors() {
   }
 
   // Handle Clear Cheque
-  const handleClearCheque = async (transaction) => {
+  const handleClearCheque = async (transaction, targetAccountId) => {
+    if (!targetAccountId) {
+      alert("Please select a bank account that this cheque was paid from.")
+      return
+    }
+
     setClearingId(transaction.id)
     try {
       await clearCheque.mutateAsync({
         transactionId: transaction.id,
         vendorId: transaction.vendor_id,
+        accountId: targetAccountId,
       })
     } catch (err) {
       console.error('Failed to clear cheque:', err)
@@ -286,20 +304,34 @@ function Vendors() {
                   <span className="text-sm font-bold text-warning-400 tabular-nums">
                     Rs.{Number(cheque.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
-                  <button
-                    onClick={() => handleClearCheque(cheque)}
-                    disabled={clearingId === cheque.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {clearingId === cheque.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Mark Cleared
-                      </>
-                    )}
-                  </button>
+
+                  <div className="flex items-center gap-2 ml-2">
+                    <select
+                      className="input-field py-1 px-2 text-xs h-auto min-h-0"
+                      onChange={(e) => setClearingAccountId(e.target.value)}
+                      value={clearingAccountId || cheque.account_id || ''}
+                    >
+                      <option value="" disabled>Select Account...</option>
+                      {bankAccounts?.map(acc => (
+                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                      ))}
+                    </select>
+
+                    <button
+                      onClick={() => handleClearCheque(cheque, clearingAccountId || cheque.account_id)}
+                      disabled={clearingId === cheque.id || (!clearingAccountId && !cheque.account_id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {clearingId === cheque.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Mark Cleared
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -358,6 +390,25 @@ function Vendors() {
                   autoFocus
                 />
               </div>
+            </div>
+
+            {/* Pay From Account */}
+            <div className="space-y-1.5 animate-fade-in">
+              <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
+                Pay From <span className="text-danger-400">*</span>
+              </label>
+              <select
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                className="input-field"
+                disabled={recordPayment.isPending || paymentSubmitStatus === 'success'}
+                required
+              >
+                <option value="" disabled>Select Bank Account</option>
+                {bankAccounts?.map(acc => (
+                  <option key={acc.id} value={acc.id}>{acc.name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Payment Method */}

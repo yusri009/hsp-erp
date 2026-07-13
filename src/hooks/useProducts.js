@@ -180,7 +180,12 @@ export function useDeleteProduct() {
         .eq('id', productId)
         .eq('tenant_id', tenantId)
 
-      if (error) throw error
+      if (error) {
+        if (error.code === '23503' || error.message?.includes('violates foreign key constraint')) {
+          throw new Error('This product cannot be deleted because it is used in existing purchase orders or sales orders. To hide it, you can edit the product and rename it or set its stock to zero.')
+        }
+        throw error
+      }
       return true
     },
     onSuccess: () => {

@@ -9,6 +9,7 @@ import NewSale from './pages/NewSale'
 import Customers from './pages/Customers'
 import Vendors from './pages/Vendors'
 import Expenses from './pages/Expenses'
+import BankAccounts from './pages/BankAccounts'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -42,6 +43,7 @@ function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/expenses" element={<Expenses />} />
+          <Route path="/banking" element={<BankAccounts />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
       </Route>

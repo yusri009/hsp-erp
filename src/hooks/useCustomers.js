@@ -121,12 +121,13 @@ export function useRecordPayment() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ customerId, amount, paymentMethod, chequeNumber }) => {
+    mutationFn: async ({ customerId, amount, paymentMethod, chequeNumber, accountId }) => {
       const { data, error } = await supabase.rpc('record_customer_payment', {
         p_customer_id: customerId,
         p_amount: amount,
         p_payment_method: paymentMethod,
         p_cheque_number: chequeNumber || null,
+        p_account_id: accountId,
       })
 
       if (error) throw error
@@ -143,10 +144,11 @@ export function useClearCheque() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ transactionId, customerId }) => {
+    mutationFn: async ({ transactionId, customerId, accountId }) => {
       const { data, error } = await supabase.rpc('clear_pending_cheque', {
         p_transaction_id: transactionId,
         p_customer_id: customerId,
+        p_account_id: accountId,
       })
 
       if (error) throw error

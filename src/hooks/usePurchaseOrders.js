@@ -59,11 +59,29 @@ export function useCreatePurchaseOrder() {
         if (updateError) throw updateError
       }
 
+      // 4. Update vendor balance
+      const { data: vendor, error: vendorFetchError } = await supabase
+        .from('vendors')
+        .select('total_balance_owed')
+        .eq('id', vendorId)
+        .single()
+
+      if (vendorFetchError) throw vendorFetchError
+
+      const newBalance = (vendor.total_balance_owed || 0) + totalCost
+      const { error: vendorUpdateError } = await supabase
+        .from('vendors')
+        .update({ total_balance_owed: newBalance })
+        .eq('id', vendorId)
+
+      if (vendorUpdateError) throw vendorUpdateError
+
       return purchaseOrder
     },
     onSuccess: () => {
-      // Invalidate product queries to refetch updated stock
+      // Invalidate product and vendor queries to refetch updated data
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['vendors'] })
     },
   })
 }
