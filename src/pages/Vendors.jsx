@@ -51,6 +51,7 @@ function Vendors() {
   // Add Vendor Form State
   const [newVendorName, setNewVendorName] = useState('')
   const [newVendorContact, setNewVendorContact] = useState('')
+  const [newVendorInitialBalance, setNewVendorInitialBalance] = useState('')
   const [addSubmitStatus, setAddSubmitStatus] = useState(null)
   const [addErrorMessage, setAddErrorMessage] = useState('')
 
@@ -59,6 +60,7 @@ function Vendors() {
     setEditingVendor(vendor)
     setNewVendorName(vendor ? vendor.name : '')
     setNewVendorContact(vendor ? (vendor.contact_number || '') : '')
+    setNewVendorInitialBalance('')
     setAddSubmitStatus(null)
     setAddErrorMessage('')
     setIsAddModalOpen(true)
@@ -104,6 +106,7 @@ function Vendors() {
         await addVendor.mutateAsync({
           name: newVendorName,
           contactNumber: newVendorContact,
+          initialBalance: newVendorInitialBalance,
         })
       }
 
@@ -439,6 +442,28 @@ function Vendors() {
                 disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
               />
             </div>
+
+            {/* Initial Balance Owed */}
+            {!editingVendor && (
+              <div className="space-y-1.5 animate-fade-in" style={{ animationDelay: '100ms' }}>
+                <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
+                  Initial Balance Owed
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newVendorInitialBalance}
+                    onChange={(e) => setNewVendorInitialBalance(e.target.value)}
+                    placeholder="0.00"
+                    className="input-field pl-7"
+                    disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex justify-between gap-3 border-t border-surface-700/50 mt-2">

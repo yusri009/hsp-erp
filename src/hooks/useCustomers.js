@@ -26,7 +26,7 @@ export function useAddCustomer() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ name, contactNumber, creditLimit }) => {
+    mutationFn: async ({ name, contactNumber, creditLimit, initialBalance }) => {
       const { data, error } = await supabase
         .from('customers')
         .insert([{
@@ -34,7 +34,7 @@ export function useAddCustomer() {
           name,
           contact_number: contactNumber || null,
           credit_limit: creditLimit ? Number(creditLimit) : null,
-          balance_due: 0
+          balance_due: initialBalance ? Number(initialBalance) : 0
         }])
         .select()
         .single()

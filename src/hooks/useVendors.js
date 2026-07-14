@@ -26,14 +26,14 @@ export function useAddVendor() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ name, contactNumber }) => {
+    mutationFn: async ({ name, contactNumber, initialBalance }) => {
       const { data, error } = await supabase
         .from('vendors')
         .insert([{
           tenant_id: tenantId,
           name,
           contact_number: contactNumber || null,
-          total_balance_owed: 0
+          total_balance_owed: initialBalance ? Number(initialBalance) : 0
         }])
         .select()
         .single()

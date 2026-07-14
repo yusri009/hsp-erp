@@ -47,6 +47,7 @@ function Customers() {
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerContact, setNewCustomerContact] = useState('')
   const [newCustomerCreditLimit, setNewCustomerCreditLimit] = useState('')
+  const [newCustomerInitialBalance, setNewCustomerInitialBalance] = useState('')
   const [addSubmitStatus, setAddSubmitStatus] = useState(null)
   const [addErrorMessage, setAddErrorMessage] = useState('')
 
@@ -56,6 +57,7 @@ function Customers() {
     setNewCustomerName(customer ? customer.name : '')
     setNewCustomerContact(customer ? (customer.contact_number || '') : '')
     setNewCustomerCreditLimit(customer ? (customer.credit_limit || '') : '')
+    setNewCustomerInitialBalance('')
     setAddSubmitStatus(null)
     setAddErrorMessage('')
     setIsAddModalOpen(true)
@@ -103,6 +105,7 @@ function Customers() {
           name: newCustomerName,
           contactNumber: newCustomerContact,
           creditLimit: newCustomerCreditLimit,
+          initialBalance: newCustomerInitialBalance,
         })
       }
 
@@ -454,7 +457,7 @@ function Customers() {
             </div>
 
             {/* Credit Limit */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 animate-fade-in" style={{ animationDelay: '100ms' }}>
               <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
                 Credit Limit
               </label>
@@ -472,6 +475,28 @@ function Customers() {
                 />
               </div>
             </div>
+
+            {/* Initial Balance Due */}
+            {!editingCustomer && (
+              <div className="space-y-1.5 animate-fade-in" style={{ animationDelay: '150ms' }}>
+                <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
+                  Initial Balance Due
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newCustomerInitialBalance}
+                    onChange={(e) => setNewCustomerInitialBalance(e.target.value)}
+                    placeholder="0.00"
+                    className="input-field pl-7"
+                    disabled={addSubmitStatus === 'loading' || addSubmitStatus === 'success'}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex justify-between gap-3 border-t border-surface-700/50 mt-2">
