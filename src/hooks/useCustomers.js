@@ -102,13 +102,14 @@ export function useRecordPayment() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ customerId, amount, paymentMethod, chequeNumber, accountId }) => {
+    mutationFn: async ({ customerId, amount, paymentMethod, chequeNumber, accountId, chequeDate }) => {
       const { data, error } = await supabase.rpc('record_customer_payment', {
         p_customer_id: customerId,
         p_amount: amount,
         p_payment_method: paymentMethod,
         p_cheque_number: chequeNumber || null,
         p_account_id: accountId,
+        p_cheque_date: chequeDate || null,
       })
 
       if (error) throw error

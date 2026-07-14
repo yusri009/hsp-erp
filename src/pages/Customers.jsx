@@ -38,6 +38,7 @@ function Customers() {
   const [amount, setAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [chequeNumber, setChequeNumber] = useState('')
+  const [chequeDate, setChequeDate] = useState('')
   const [accountId, setAccountId] = useState('')
   const [paymentSubmitStatus, setPaymentSubmitStatus] = useState(null)
   const [paymentErrorMessage, setPaymentErrorMessage] = useState('')
@@ -118,9 +119,10 @@ function Customers() {
   // Handle Receive Payment Click
   const handleReceivePayment = (customer) => {
     setSelectedCustomer(customer)
-    setAmount('')
+    setAmount(customer.balance_due) // Default to full amount
     setPaymentMethod('Cash')
     setChequeNumber('')
+    setChequeDate('')
     setAccountId('')
     setPaymentSubmitStatus(null)
     setPaymentErrorMessage('')
@@ -131,20 +133,27 @@ function Customers() {
   const handlePaymentSubmit = async (e) => {
     e.preventDefault()
 
+    if (paymentMethod === 'Cheque') {
+      if (!chequeNumber.trim()) {
+        setPaymentErrorMessage('Please enter a cheque number.')
+        setPaymentSubmitStatus('error')
+        return
+      }
+      if (!chequeDate) {
+        setPaymentErrorMessage('Please select a cheque due date.')
+        setPaymentSubmitStatus('error')
+        return
+      }
+    }
+
     if (!amount || Number(amount) <= 0) {
       setPaymentErrorMessage('Please enter a valid amount.')
       setPaymentSubmitStatus('error')
       return
     }
 
-    if (paymentMethod === 'Cheque' && !chequeNumber.trim()) {
-      setPaymentErrorMessage('Please enter a cheque number.')
-      setPaymentSubmitStatus('error')
-      return
-    }
-
     if (!accountId) {
-      setPaymentErrorMessage('Please select a bank account to deposit to.')
+      setPaymentErrorMessage('Please select a bank account to receive into.')
       setPaymentSubmitStatus('error')
       return
     }
@@ -158,6 +167,7 @@ function Customers() {
         amount: Number(amount),
         paymentMethod,
         chequeNumber: paymentMethod === 'Cheque' ? chequeNumber : null,
+        chequeDate: paymentMethod === 'Cheque' ? chequeDate : null,
         accountId: accountId,
       })
 
@@ -337,18 +347,28 @@ function Customers() {
 
             {/* Cheque Number (Conditional) */}
             {paymentMethod === 'Cheque' && (
-              <div className="space-y-1.5 animate-fade-in">
-                <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
-                  Cheque Number
-                </label>
-                <input
-                  type="text"
-                  value={chequeNumber}
-                  onChange={(e) => setChequeNumber(e.target.value)}
-                  placeholder="Enter cheque number..."
-                  className="input-field"
-                  disabled={recordPayment.isPending || paymentSubmitStatus === 'success'}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-surface-300">Cheque Number</label>
+                  <input
+                    type="text"
+                    value={chequeNumber}
+                    onChange={(e) => setChequeNumber(e.target.value)}
+                    placeholder="Enter cheque number"
+                    className="input-field w-full"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-surface-300">Cheque Date</label>
+                  <input
+                    type="date"
+                    value={chequeDate}
+                    onChange={(e) => setChequeDate(e.target.value)}
+                    className="input-field w-full"
+                    required
+                  />
+                </div>
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useLocation } from 'react-router'
+import { useState, useEffect, useRef } from 'react'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router'
 import {
   LayoutDashboard,
   Package,
@@ -19,9 +19,13 @@ import {
   Wallet,
   Building2,
   Banknote,
+  ListOrdered,
+  Bell,
+  CheckCircle2
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { useDueCheques } from '../hooks/useCheques'
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,6 +36,7 @@ const navItems = [
   { path: '/expenses', label: 'Expenses', icon: Wallet },
   { path: '/banking', label: 'Banking', icon: Building2 },
   { path: '/cheques', label: 'Cheques', icon: Banknote },
+  { path: '/transactions', label: 'Transactions', icon: ListOrdered },
   { path: '/reports', label: 'Reports', icon: FileBarChart2 },
 ]
 
@@ -47,6 +52,23 @@ function Layout() {
   const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  
+  const notificationsRef = useRef(null)
+  const navigate = useNavigate()
+
+  const { data: dueCheques } = useDueCheques()
+
+  // Close notifications on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setNotificationsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   // Theme state
   const [isDark, setIsDark] = useState(() => {
@@ -202,48 +224,10 @@ function Layout() {
           })}
         </nav>
 
-        {/* Bottom: User Profile + Actions */}
-        <div className="flex flex-col border-t border-surface-700">
-          {/* User Profile */}
-          <div className={`flex items-center p-3 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-            <div className="w-8 h-8 rounded-lg bg-primary-500/15 flex items-center justify-center flex-shrink-0">
-              <User className="w-4 h-4 text-primary-400" />
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-surface-200 truncate">
-                  {user?.email}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Log Out */}
-          <div className={`flex items-center px-3 pb-2 ${collapsed ? 'justify-center' : ''}`}>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className={`flex items-center rounded-lg text-surface-400 hover:text-danger-400 hover:bg-danger-500/10 transition-colors ${collapsed ? 'p-2' : 'px-3 py-2 w-full gap-3'}`}
-              aria-label="Log out"
-            >
-              <LogOut className="w-4 h-4 flex-shrink-0" />
-              {!collapsed && <span className="text-sm font-medium">Log Out</span>}
-            </button>
-          </div>
-
-          {/* Theme Toggle */}
-          <div className="flex items-center justify-center p-3 border-t border-surface-700/50">
-            <button
-              onClick={toggleTheme}
-              className={`flex items-center rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors ${collapsed ? 'p-2' : 'px-3 py-2 w-full gap-3'}`}
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="w-5 h-5 flex-shrink-0" /> : <Moon className="w-5 h-5 flex-shrink-0" />}
-              {!collapsed && <span className="text-sm font-medium">{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
-            </button>
-          </div>
-
+        {/* Bottom: Actions */}
+        <div className="flex flex-col border-t border-surface-700 mt-auto">
           {/* Collapse Toggle */}
-          <div className="hidden lg:flex items-center justify-center p-3 border-t border-surface-700/50">
+          <div className="hidden lg:flex items-center justify-center p-3">
             <button
               onClick={() => setCollapsed(!collapsed)}
               className={`flex items-center rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors ${collapsed ? 'p-2' : 'px-3 py-2 w-full gap-3'}`}
@@ -258,16 +242,146 @@ function Layout() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar (mobile) */}
-        <header className="lg:hidden flex items-center h-14 px-4 border-b border-surface-700 bg-surface-800">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 -ml-2 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-700"
-            aria-label="Open menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <h1 className="ml-3 text-sm font-semibold text-surface-200">HSP ERP</h1>
+        {/* Universal Top Bar */}
+        <header className="flex items-center justify-between h-14 px-4 border-b border-surface-700 bg-surface-800 shrink-0">
+          <div className="flex items-center">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden p-2 -ml-2 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-700"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="lg:hidden ml-3 text-sm font-semibold text-surface-200">HSP ERP</h1>
+          </div>
+
+          {/* Top Right Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Notifications */}
+            <div className="relative" ref={notificationsRef}>
+              <button
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-2 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors"
+                title="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {dueCheques?.length > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-danger-500 rounded-full border-2 border-surface-800"></span>
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-surface-800 border border-surface-700 rounded-xl shadow-xl z-50 overflow-hidden animate-slide-up origin-top-right">
+                  <div className="p-3 border-b border-surface-700 bg-surface-900/50 flex justify-between items-center">
+                    <h3 className="font-semibold text-surface-50 text-sm flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-primary-400" />
+                      Pending Cheques
+                    </h3>
+                    <span className="text-xs text-surface-400 font-medium bg-surface-700 px-2 py-0.5 rounded-full">
+                      {dueCheques?.length || 0} Due
+                    </span>
+                  </div>
+                  
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    {!dueCheques || dueCheques.length === 0 ? (
+                      <div className="p-6 text-center text-surface-400 text-sm">
+                        <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        No upcoming cheques due.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-surface-700/50">
+                        {dueCheques.map(cheque => {
+                          const isMoneyIn = cheque.type === 'Money In'
+                          const entity = cheque.customers?.name || cheque.vendors?.name || cheque.expenses?.category || 'Unknown'
+                          const color = isMoneyIn ? 'text-emerald-400' : 'text-danger-400'
+                          
+                          // Format date nicely
+                          const dateObj = new Date(cheque.cheque_date)
+                          let dateLabel = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                          const today = new Date().toISOString().split('T')[0]
+                          if (cheque.cheque_date === today) dateLabel = 'Today'
+                          else if (cheque.cheque_date < today) dateLabel = 'Overdue'
+
+                          return (
+                            <div key={cheque.id} className="p-3 hover:bg-surface-700/30 transition-colors">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="font-medium text-surface-200 text-sm truncate max-w-[150px]" title={entity}>
+                                  {entity}
+                                </span>
+                                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-md ${
+                                  dateLabel === 'Overdue' ? 'bg-danger-500/15 text-danger-400' : 'bg-surface-700 text-surface-300'
+                                }`}>
+                                  {dateLabel}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-end">
+                                <div className="text-xs text-surface-400">
+                                  Chq: {cheque.cheque_number || 'N/A'}
+                                </div>
+                                <div className={`font-semibold text-sm ${color}`}>
+                                  {isMoneyIn ? '+' : '-'}Rs.{Number(cheque.amount).toLocaleString('en-IN')}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {dueCheques?.length > 0 && (
+                    <div className="p-2 border-t border-surface-700 bg-surface-900/50">
+                      <button
+                        onClick={() => {
+                          setNotificationsOpen(false)
+                          navigate('/cheques')
+                        }}
+                        className="w-full py-1.5 text-xs font-medium text-primary-400 hover:text-primary-300 hover:bg-primary-500/10 rounded-lg transition-colors text-center"
+                      >
+                        View all Cheques →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors"
+              title={isDark ? 'Light Mode' : 'Dark Mode'}
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            {/* User Profile & Logout */}
+            <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-surface-700/50">
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary-500/15 flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary-400" />
+                </div>
+                <span className="text-sm font-medium text-surface-200 truncate max-w-[150px] lg:max-w-[200px]">
+                  {user?.email}
+                </span>
+              </div>
+              
+              {/* Mobile User Icon */}
+              <div className="sm:hidden w-8 h-8 rounded-lg bg-primary-500/15 flex items-center justify-center">
+                <User className="w-4 h-4 text-primary-400" />
+              </div>
+
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="p-2 rounded-lg text-surface-400 hover:text-danger-400 hover:bg-danger-500/10 transition-colors flex items-center gap-2"
+                title="Log Out"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden lg:block text-sm font-medium">Log Out</span>
+              </button>
+            </div>
+          </div>
         </header>
 
         {/* Page Content */}

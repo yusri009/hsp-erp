@@ -10,7 +10,7 @@ export function useCheques() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transactions')
-        .select('*, customers(name), vendors(name)')
+        .select('*, customers(name), vendors(name), expenses(category)')
         .eq('tenant_id', tenantId)
         .eq('payment_method', 'Cheque')
         .order('date', { ascending: false })
@@ -19,6 +19,30 @@ export function useCheques() {
       return data
     },
     enabled: !!tenantId,
+  })
+}
+
+export function useDueCheques() {
+  const { tenantId } = useAuth()
+
+  return useQuery({
+    queryKey: ['due-cheques', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*, customers(name), vendors(name), expenses(category)')
+        .eq('tenant_id', tenantId)
+        .eq('payment_method', 'Cheque')
+        .eq('status', 'Pending')
+        .not('cheque_date', 'is', null)
+        .lte('cheque_date', new Date(Date.now() + 86400000).toISOString().split('T')[0]) // Tomorrow or earlier
+        .order('cheque_date', { ascending: true })
+
+      if (error) throw error
+      return data
+    },
+    enabled: !!tenantId,
+    refetchInterval: 300000, // Refetch every 5 minutes just in case
   })
 }
 
@@ -62,6 +86,29 @@ export function useClearVendorCheque() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cheques'] })
       queryClient.invalidateQueries({ queryKey: ['vendors'] })
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] })
+    },
+  })
+}
+
+export function useClearExpenseCheque() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ transactionId, expenseId, accountId }) => {
+      const { data, error } = await supabase.rpc('clear_expense_cheque', {
+        p_transaction_id: transactionId,
+        p_expense_id: expenseId,
+        p_account_id: accountId,
+      })
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cheques'] })
+      queryClient.invalidateQueries({ queryKey: ['expenses'] })
       queryClient.invalidateQueries({ queryKey: ['bank-accounts'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] })
     },

@@ -70,3 +70,29 @@ export function useDeleteExpense() {
     },
   })
 }
+
+export function usePayExpense() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ expenseId, accountId, paymentMethod, chequeNumber, chequeDate }) => {
+      const { data, error } = await supabase.rpc('pay_expense', {
+        p_expense_id: expenseId,
+        p_account_id: accountId,
+        p_payment_method: paymentMethod,
+        p_cheque_number: chequeNumber || null,
+        p_cheque_date: chequeDate || null,
+      })
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] })
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] })
+      queryClient.invalidateQueries({ queryKey: ['cheques'] })
+    },
+  })
+}

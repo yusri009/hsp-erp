@@ -2,13 +2,13 @@ import { useState } from 'react'
 import {
   Banknote,
   CheckCircle2,
-  Clock,
-  AlertCircle,
   Loader2,
   ArrowRight,
-  Undo2
+  Undo2,
+  Clock,
+  AlertCircle
 } from 'lucide-react'
-import { useCheques, useClearCheque, useClearVendorCheque, useUndoClearCheque } from '../hooks/useCheques'
+import { useCheques, useClearCheque, useClearVendorCheque, useClearExpenseCheque, useUndoClearCheque } from '../hooks/useCheques'
 import { useBankAccounts } from '../hooks/useBankAccounts'
 import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
@@ -24,6 +24,7 @@ function Cheques() {
 
   const clearCustomerCheque = useClearCheque()
   const clearVendorCheque = useClearVendorCheque()
+  const clearExpenseCheque = useClearExpenseCheque()
   const undoClear = useUndoClearCheque()
   const [undoingId, setUndoingId] = useState(null)
 
@@ -50,7 +51,7 @@ function Cheques() {
     {
       key: 'entity',
       header: 'Entity',
-      render: (_, row) => row.customers?.name || row.vendors?.name || 'Unknown',
+      render: (_, row) => row.customers?.name || row.vendors?.name || row.expenses?.category || 'Unknown',
     },
     {
       key: 'type',
@@ -155,11 +156,19 @@ function Cheques() {
           accountId,
         })
       } else {
-        await clearVendorCheque.mutateAsync({
-          transactionId: selectedCheque.id,
-          vendorId: selectedCheque.vendor_id,
-          accountId,
-        })
+        if (selectedCheque.expense_id) {
+          await clearExpenseCheque.mutateAsync({
+            transactionId: selectedCheque.id,
+            expenseId: selectedCheque.expense_id,
+            accountId,
+          })
+        } else {
+          await clearVendorCheque.mutateAsync({
+            transactionId: selectedCheque.id,
+            vendorId: selectedCheque.vendor_id,
+            accountId,
+          })
+        }
       }
       setSelectedCheque(null)
       setAccountId('')
