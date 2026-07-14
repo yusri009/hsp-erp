@@ -1,0 +1,41 @@
+name: Supabase Database Backup
+
+on:
+  schedule:
+    # Run at midnight UTC every day
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual triggers from the GitHub UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "timestamp=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+
+      - name: Dump Database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "Error: SUPABASE_DB_URL secret is not set!"
+            exit 1
+          fi
+          echo "Starting database backup..."
+          pg_dump "$SUPABASE_DB_URL" > supabase_backup_${{ steps.timestamp.outputs.timestamp }}.sql
+          echo "Backup completed successfully."
+
+      - name: Upload Backup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-db-backup-${{ steps.timestamp.outputs.timestamp }}
+          path: supabase_backup_${{ steps.timestamp.outputs.timestamp }}.sql
+          retention-days: 90
