@@ -14,8 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install PostgreSQL Client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
 
       - name: Generate timestamp
         id: timestamp
@@ -30,7 +29,7 @@ jobs:
             exit 1
           fi
           echo "Starting database backup..."
-          pg_dump "$SUPABASE_DB_URL" > supabase_backup_${{ steps.timestamp.outputs.timestamp }}.sql
+          docker run --rm postgres:17 pg_dump "$SUPABASE_DB_URL" > supabase_backup_${{ steps.timestamp.outputs.timestamp }}.sql
           echo "Backup completed successfully."
 
       - name: Upload Backup Artifact
