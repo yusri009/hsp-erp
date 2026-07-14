@@ -94,27 +94,7 @@ export function useDeleteVendor() {
   })
 }
 
-export function usePendingVendorCheques() {
-  const { tenantId } = useAuth()
 
-  return useQuery({
-    queryKey: ['pending-vendor-cheques', tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*, vendors(name)')
-        .eq('tenant_id', tenantId)
-        .eq('type', 'Money Out')
-        .eq('payment_method', 'Cheque')
-        .eq('status', 'Pending')
-        .order('date', { ascending: true })
-
-      if (error) throw error
-      return data
-    },
-    enabled: !!tenantId,
-  })
-}
 
 export function useRecordVendorPayment() {
   const queryClient = useQueryClient()
@@ -139,23 +119,3 @@ export function useRecordVendorPayment() {
   })
 }
 
-export function useClearVendorCheque() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ transactionId, vendorId, accountId }) => {
-      const { data, error } = await supabase.rpc('clear_vendor_cheque', {
-        p_transaction_id: transactionId,
-        p_vendor_id: vendorId,
-        p_account_id: accountId,
-      })
-
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vendors'] })
-      queryClient.invalidateQueries({ queryKey: ['pending-vendor-cheques'] })
-    },
-  })
-}

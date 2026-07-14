@@ -96,26 +96,7 @@ export function useDeleteCustomer() {
   })
 }
 
-export function usePendingCheques() {
-  const { tenantId } = useAuth()
 
-  return useQuery({
-    queryKey: ['pending-cheques', tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*, customers(name)')
-        .eq('tenant_id', tenantId)
-        .eq('payment_method', 'Cheque')
-        .eq('status', 'Pending')
-        .order('date', { ascending: true })
-
-      if (error) throw error
-      return data
-    },
-    enabled: !!tenantId,
-  })
-}
 
 export function useRecordPayment() {
   const queryClient = useQueryClient()
@@ -140,23 +121,3 @@ export function useRecordPayment() {
   })
 }
 
-export function useClearCheque() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ transactionId, customerId, accountId }) => {
-      const { data, error } = await supabase.rpc('clear_pending_cheque', {
-        p_transaction_id: transactionId,
-        p_customer_id: customerId,
-        p_account_id: accountId,
-      })
-
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-      queryClient.invalidateQueries({ queryKey: ['pending-cheques'] })
-    },
-  })
-}

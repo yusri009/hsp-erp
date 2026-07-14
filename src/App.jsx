@@ -10,6 +10,7 @@ import Customers from './pages/Customers'
 import Vendors from './pages/Vendors'
 import Expenses from './pages/Expenses'
 import BankAccounts from './pages/BankAccounts'
+import Cheques from './pages/Cheques'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -44,6 +45,7 @@ function App() {
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/banking" element={<BankAccounts />} />
+          <Route path="/cheques" element={<Cheques />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
       </Route>

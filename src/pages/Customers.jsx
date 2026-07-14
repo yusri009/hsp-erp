@@ -11,7 +11,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react'
-import { useCustomers, usePendingCheques, useRecordPayment, useClearCheque, useAddCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useCustomers'
+import { useCustomers, useRecordPayment, useAddCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useCustomers'
 import { useBankAccounts } from '../hooks/useBankAccounts'
 import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
@@ -20,12 +20,10 @@ import FilterDropdown from '../components/FilterDropdown'
 function Customers() {
   // Queries
   const { data: customers, isLoading: customersLoading } = useCustomers()
-  const { data: pendingCheques, isLoading: chequesLoading } = usePendingCheques()
   const { data: bankAccounts } = useBankAccounts()
 
   // Mutations
   const recordPayment = useRecordPayment()
-  const clearCheque = useClearCheque()
   const addCustomer = useAddCustomer()
   const updateCustomer = useUpdateCustomer()
   const deleteCustomer = useDeleteCustomer()
@@ -50,10 +48,6 @@ function Customers() {
   const [newCustomerCreditLimit, setNewCustomerCreditLimit] = useState('')
   const [addSubmitStatus, setAddSubmitStatus] = useState(null)
   const [addErrorMessage, setAddErrorMessage] = useState('')
-
-  // Pending Cheque State
-  const [clearingId, setClearingId] = useState(null)
-  const [clearingAccountId, setClearingAccountId] = useState('')
 
   // Handle Add/Edit Customer Click
   const handleAddCustomerClick = (customer = null) => {
@@ -177,28 +171,6 @@ function Customers() {
     }
   }
 
-  // Handle Clear Cheque
-  const handleClearCheque = async (transaction, targetAccountId) => {
-    if (!targetAccountId) {
-      alert("Please select a bank account to deposit the cleared cheque into.")
-      return
-    }
-    
-    setClearingId(transaction.id)
-    try {
-      await clearCheque.mutateAsync({
-        transactionId: transaction.id,
-        customerId: transaction.customer_id,
-        accountId: targetAccountId,
-      })
-    } catch (err) {
-      console.error('Failed to clear cheque:', err)
-      // Could show a toast here
-    } finally {
-      setClearingId(null)
-    }
-  }
-
   // Customers Table Columns
   const columns = [
     {
@@ -277,79 +249,6 @@ function Customers() {
           New Customer
         </button>
       </div>
-
-      {/* Pending Cheques Widget */}
-      {!chequesLoading && pendingCheques?.length > 0 && (
-        <div className="glass-card border-warning-500/20 overflow-hidden animate-slide-up">
-          <div className="p-4 sm:p-5 border-b border-surface-700/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-warning-500/10">
-                  <Clock className="w-5 h-5 text-warning-400" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-warning-300">
-                    Pending Cheques ({pendingCheques.length})
-                  </h2>
-                  <p className="text-xs text-surface-400 mt-0.5">
-                    Clear these cheques to update customer balances
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="divide-y divide-surface-700/30">
-            {pendingCheques.map((cheque) => (
-              <div
-                key={cheque.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-5 py-3 hover:bg-surface-800/50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-surface-200">
-                    {cheque.customers?.name} <span className="text-surface-500 font-normal ml-1">#{cheque.cheque_number}</span>
-                  </p>
-                  <p className="text-xs text-surface-500">
-                    {new Date(cheque.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-bold text-warning-400 tabular-nums">
-                    Rs.{Number(cheque.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                  
-                  <div className="flex items-center gap-2 ml-2">
-                    <select
-                      className="input-field py-1 px-2 text-xs h-auto min-h-0"
-                      onChange={(e) => setClearingAccountId(e.target.value)}
-                      value={clearingAccountId || cheque.account_id || ''}
-                    >
-                      <option value="" disabled>Select Account...</option>
-                      {bankAccounts?.map(acc => (
-                        <option key={acc.id} value={acc.id}>{acc.name}</option>
-                      ))}
-                    </select>
-
-                    <button
-                      onClick={() => handleClearCheque(cheque, clearingAccountId || cheque.account_id)}
-                      disabled={clearingId === cheque.id || (!clearingAccountId && !cheque.account_id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {clearingId === cheque.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Clear
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Customers Data Table */}
       <div className="animate-slide-up" style={{ animationDelay: '0.05s' }}>

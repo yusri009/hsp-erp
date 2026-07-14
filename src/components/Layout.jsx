@@ -18,6 +18,7 @@ import {
   FileBarChart2,
   Wallet,
   Building2,
+  Banknote,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
@@ -30,6 +31,7 @@ const navItems = [
   { path: '/vendors', label: 'Vendors', icon: Factory },
   { path: '/expenses', label: 'Expenses', icon: Wallet },
   { path: '/banking', label: 'Banking', icon: Building2 },
+  { path: '/cheques', label: 'Cheques', icon: Banknote },
   { path: '/reports', label: 'Reports', icon: FileBarChart2 },
 ]
 
