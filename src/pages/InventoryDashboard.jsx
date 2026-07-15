@@ -53,7 +53,7 @@ function InventoryDashboard() {
   const [newProdSku, setNewProdSku] = useState('')
   const [newProdSize, setNewProdSize] = useState('')
   const [newProdColor, setNewProdColor] = useState('')
-  const [newProdPieces, setNewProdPieces] = useState('')
+  const [newProdStock, setNewProdStock] = useState('')
   const [newProdAvgCost, setNewProdAvgCost] = useState('')
   const [newProdSellingPrice, setNewProdSellingPrice] = useState('')
   const [prodSubmitStatus, setProdSubmitStatus] = useState(null)
@@ -117,7 +117,7 @@ function InventoryDashboard() {
       setNewProdSku(product.sku || '')
       setNewProdSize(product.size || '')
       setNewProdColor(product.color || '')
-      setNewProdPieces(product.pieces_per_packet || '')
+      setNewProdStock(product.stock_quantity !== null && product.stock_quantity !== undefined ? product.stock_quantity : '')
       setNewProdAvgCost(product.avg_cost || '')
       setNewProdSellingPrice(product.selling_price || '')
     } else {
@@ -125,7 +125,7 @@ function InventoryDashboard() {
       setNewProdSku('')
       setNewProdSize('')
       setNewProdColor('')
-      setNewProdPieces('')
+      setNewProdStock('')
       setNewProdAvgCost('')
       setNewProdSellingPrice('')
     }
@@ -185,7 +185,7 @@ function InventoryDashboard() {
           sku: newProdSku,
           size: newProdSize,
           color: newProdColor,
-          piecesPerPacket: newProdPieces,
+          stockQuantity: newProdStock,
           avgCost: newProdAvgCost,
           sellingPrice: newProdSellingPrice,
         })
@@ -195,7 +195,7 @@ function InventoryDashboard() {
           sku: newProdSku,
           size: newProdSize,
           color: newProdColor,
-          piecesPerPacket: newProdPieces,
+          stockQuantity: newProdStock,
           avgCost: newProdAvgCost,
           sellingPrice: newProdSellingPrice,
         })
@@ -274,12 +274,7 @@ function InventoryDashboard() {
         </div>
       ),
     },
-    {
-      key: 'pieces_per_packet',
-      header: 'Pieces / Pkt',
-      sortable: true,
-      render: (val) => <span className="tabular-nums text-surface-300">{val || '—'}</span>,
-    },
+
     {
       key: 'avg_cost',
       header: 'Cost / Pkt',
@@ -648,14 +643,14 @@ function InventoryDashboard() {
 
             <div className="space-y-1.5">
               <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
-                Pieces per Packet
+                Currently Available Stock
               </label>
               <input
                 type="number"
-                value={newProdPieces}
-                onChange={(e) => setNewProdPieces(e.target.value)}
-                placeholder="e.g. 50"
-                min="1"
+                value={newProdStock}
+                onChange={(e) => setNewProdStock(e.target.value)}
+                placeholder="e.g. 100"
+                min="0"
                 className="input-field"
                 disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
               />
