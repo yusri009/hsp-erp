@@ -14,8 +14,9 @@ import {
 } from 'lucide-react'
 import { useProducts } from '../hooks/useProducts'
 import { useCustomers } from '../hooks/useCustomers'
+import { useCategories } from '../hooks/useCategories'
 import { useCreateSalesOrder } from '../hooks/useSalesOrders'
-import SearchableSelect from '../components/SearchableSelect'
+import FilterDropdown from '../components/FilterDropdown'
 
 function NewSale() {
   const navigate = useNavigate()
@@ -23,7 +24,7 @@ function NewSale() {
   // Form state
   const [customerId, setCustomerId] = useState('')
   const [lineItems, setLineItems] = useState([
-    { productId: '', quantity: '', unitPrice: 0 },
+    { categoryId: '', productId: '', quantity: '', unitPrice: 0 },
   ])
   const [submitStatus, setSubmitStatus] = useState(null) // null | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
@@ -31,6 +32,7 @@ function NewSale() {
   // Queries
   const { data: customers, isLoading: customersLoading } = useCustomers()
   const { data: products, isLoading: productsLoading } = useProducts()
+  const { data: categories, isLoading: categoriesLoading } = useCategories()
   const createSalesOrder = useCreateSalesOrder()
 
   // Build a lookup map for products by id
@@ -53,13 +55,22 @@ function NewSale() {
     () => (products || []).map((p) => ({
       value: p.id,
       label: [p.sku, p.size, p.color].filter(Boolean).join(' — '),
+      categoryId: p.category_id,
     })),
     [products]
   )
 
+  const categoryOptions = useMemo(
+    () => (categories || []).map((c) => ({
+      value: c.id,
+      label: c.name,
+    })),
+    [categories]
+  )
+
   // Line item handlers
   const addLineItem = () => {
-    setLineItems((prev) => [...prev, { productId: '', quantity: '', unitPrice: 0 }])
+    setLineItems((prev) => [...prev, { categoryId: '', productId: '', quantity: '', unitPrice: 0 }])
   }
 
   const removeLineItem = (index) => {
@@ -72,6 +83,13 @@ function NewSale() {
       prev.map((item, i) => {
         if (i !== index) return item
         const updated = { ...item, [field]: value }
+        
+        // Clear product if category changes
+        if (field === 'categoryId') {
+          updated.productId = ''
+          updated.unitPrice = 0
+        }
+
         // Auto-fill unit price when product is selected
         if (field === 'productId' && value) {
           const product = productMap[value]
@@ -187,12 +205,12 @@ function NewSale() {
           </h2>
 
           <div className="max-w-md">
-            <SearchableSelect
+            <FilterDropdown
               label="Select Customer"
               value={customerId}
               onChange={setCustomerId}
               options={customerOptions}
-              placeholder="Type to search customers..."
+              placeholder="Select customer..."
               disabled={customersLoading}
             />
             {customerId && customers && (
@@ -232,7 +250,8 @@ function NewSale() {
           </div>
 
           {/* Column Headers (desktop) */}
-          <div className="hidden sm:grid sm:grid-cols-[1fr_140px_140px_40px] gap-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wider">
+          <div className="hidden sm:grid sm:grid-cols-[160px_1fr_120px_140px_40px] gap-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wider">
+            <span>Category</span>
             <span>Product</span>
             <span>Packets</span>
             <span>Line Total</span>
@@ -243,19 +262,38 @@ function NewSale() {
             {lineItems.map((item, index) => {
               const lineTotal = getLineTotal(item)
               const selectedProduct = item.productId ? productMap[item.productId] : null
+              const filteredProducts = item.categoryId 
+                ? productOptions.filter(p => p.categoryId === item.categoryId)
+                : productOptions
 
               return (
                 <div
                   key={index}
-                  className="flex flex-col sm:grid sm:grid-cols-[1fr_140px_140px_40px] gap-3 p-4 rounded-xl bg-surface-900/50 border border-surface-700/50 animate-slide-up"
+                  className="flex flex-col sm:grid sm:grid-cols-[160px_1fr_120px_140px_40px] gap-3 p-4 rounded-xl bg-surface-900/50 border border-surface-700/50 animate-slide-up"
                 >
+                  {/* Category Select */}
+                  <div className="min-w-0">
+                    <label className="sm:hidden block text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5">
+                      Category
+                    </label>
+                    <FilterDropdown
+                      value={item.categoryId}
+                      onChange={(val) => updateLineItem(index, 'categoryId', val)}
+                      options={categoryOptions}
+                      placeholder="Any Category"
+                      disabled={categoriesLoading}
+                    />
+                  </div>
                   {/* Product Select */}
                   <div className="min-w-0">
-                    <SearchableSelect
+                    <label className="sm:hidden block text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5">
+                      Product
+                    </label>
+                    <FilterDropdown
                       value={item.productId}
                       onChange={(val) => updateLineItem(index, 'productId', val)}
-                      options={productOptions}
-                      placeholder="Search product..."
+                      options={filteredProducts}
+                      placeholder="Select product..."
                       disabled={productsLoading}
                     />
                     {selectedProduct && (

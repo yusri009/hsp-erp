@@ -373,7 +373,11 @@ function Layout() {
               </div>
 
               <button
-                onClick={() => supabase.auth.signOut()}
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to log out?')) {
+                    supabase.auth.signOut()
+                  }
+                }}
                 className="p-2 rounded-lg text-surface-400 hover:text-danger-400 hover:bg-danger-500/10 transition-colors flex items-center gap-2"
                 title="Log Out"
               >
