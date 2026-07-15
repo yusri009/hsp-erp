@@ -54,6 +54,7 @@ function InventoryDashboard() {
   const [newProdSize, setNewProdSize] = useState('')
   const [newProdColor, setNewProdColor] = useState('')
   const [newProdStock, setNewProdStock] = useState('')
+  const [newProdPacketsPerBundle, setNewProdPacketsPerBundle] = useState('1')
   const [newProdAvgCost, setNewProdAvgCost] = useState('')
   const [newProdSellingPrice, setNewProdSellingPrice] = useState('')
   const [prodSubmitStatus, setProdSubmitStatus] = useState(null)
@@ -118,6 +119,7 @@ function InventoryDashboard() {
       setNewProdSize(product.size || '')
       setNewProdColor(product.color || '')
       setNewProdStock(product.stock_quantity !== null && product.stock_quantity !== undefined ? product.stock_quantity : '')
+      setNewProdPacketsPerBundle(product.packets_per_bundle || '1')
       setNewProdAvgCost(product.avg_cost || '')
       setNewProdSellingPrice(product.selling_price || '')
     } else {
@@ -126,6 +128,7 @@ function InventoryDashboard() {
       setNewProdSize('')
       setNewProdColor('')
       setNewProdStock('')
+      setNewProdPacketsPerBundle('1')
       setNewProdAvgCost('')
       setNewProdSellingPrice('')
     }
@@ -186,6 +189,7 @@ function InventoryDashboard() {
           size: newProdSize,
           color: newProdColor,
           stockQuantity: newProdStock,
+          packetsPerBundle: newProdPacketsPerBundle,
           avgCost: newProdAvgCost,
           sellingPrice: newProdSellingPrice,
         })
@@ -196,6 +200,7 @@ function InventoryDashboard() {
           size: newProdSize,
           color: newProdColor,
           stockQuantity: newProdStock,
+          packetsPerBundle: newProdPacketsPerBundle,
           avgCost: newProdAvgCost,
           sellingPrice: newProdSellingPrice,
         })
@@ -297,23 +302,30 @@ function InventoryDashboard() {
     },
     {
       key: 'stock_quantity',
-      header: 'Stock (Packets)',
+      header: 'Stock (Packets & Bundles)',
       sortable: true,
-      render: (val) => {
+      render: (val, row) => {
         const isLow = val < 10
+        const ppb = row.packets_per_bundle || 1
+        const bundles = (val / ppb).toFixed(1).replace(/\.0$/, '')
         return (
-          <div className="flex items-center gap-2">
-            <span
-              className={`tabular-nums font-bold ${isLow ? 'text-danger-400' : 'text-primary-400'
-                }`}
-            >
-              {val}
-            </span>
-            {isLow && (
-              <span className="badge bg-danger-500/10 text-danger-400 border border-danger-500/20">
-                Low
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span
+                className={`tabular-nums font-bold ${isLow ? 'text-danger-400' : 'text-primary-400'
+                  }`}
+              >
+                {val} Pkt
               </span>
-            )}
+              {isLow && (
+                <span className="badge bg-danger-500/10 text-danger-400 border border-danger-500/20">
+                  Low
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-surface-400 tabular-nums">
+              ({bundles} Bdl)
+            </span>
           </div>
         )
       },
@@ -651,6 +663,21 @@ function InventoryDashboard() {
                 onChange={(e) => setNewProdStock(e.target.value)}
                 placeholder="e.g. 100"
                 min="0"
+                className="input-field"
+                disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
+                Packets per Bundle
+              </label>
+              <input
+                type="number"
+                value={newProdPacketsPerBundle}
+                onChange={(e) => setNewProdPacketsPerBundle(e.target.value)}
+                placeholder="e.g. 10"
+                min="1"
                 className="input-field"
                 disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
               />

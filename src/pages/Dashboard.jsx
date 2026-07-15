@@ -210,7 +210,7 @@ function Dashboard() {
                       {item.stock_quantity}
                     </p>
                     <p className="text-[10px] uppercase tracking-wider font-semibold text-surface-500">
-                      Packets Left
+                      Packets ({((item.stock_quantity || 0) / (item.packets_per_bundle || 1)).toFixed(1).replace(/\.0$/, '')} BDL)
                     </p>
                   </div>
                 </div>

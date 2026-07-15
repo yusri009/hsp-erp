@@ -118,6 +118,13 @@ function NewSale() {
     0
   )
 
+  const totalBundles = lineItems.reduce((sum, item) => {
+    const qty = parseInt(item.quantity, 10) || 0
+    const product = item.productId ? productMap[item.productId] : null
+    const ppb = product?.packets_per_bundle || 1
+    return sum + (qty / ppb)
+  }, 0)
+
   // Validation
   const isFormValid =
     customerId &&
@@ -300,7 +307,7 @@ function NewSale() {
                       <p className="mt-1 text-[11px] text-surface-500">
                         Rs.{Number(selectedProduct.selling_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}/pkt
                         {' · '}
-                        {selectedProduct.stock_quantity ?? 0} in stock
+                        {selectedProduct.stock_quantity ?? 0} Pkt ({((selectedProduct.stock_quantity || 0) / (selectedProduct.packets_per_bundle || 1)).toFixed(1).replace(/\.0$/, '')} Bdl) in stock
                       </p>
                     )}
                   </div>
@@ -323,6 +330,11 @@ function NewSale() {
                         PKT
                       </span>
                     </div>
+                    {item.quantity && selectedProduct && (
+                      <p className="mt-1 text-[11px] text-surface-500 font-medium">
+                        ≈ {(parseInt(item.quantity, 10) / (selectedProduct.packets_per_bundle || 1)).toFixed(1).replace(/\.0$/, '')} Bundles
+                      </p>
+                    )}
                   </div>
 
                   {/* Line Total (read-only) */}
@@ -367,7 +379,7 @@ function NewSale() {
               <div>
                 <p className="text-xs text-surface-500 uppercase tracking-wider">Total Packets</p>
                 <p className="text-xl font-bold text-surface-50 tabular-nums">
-                  {totalPackets} <span className="text-sm font-normal text-surface-400">pkt</span>
+                  {totalPackets} <span className="text-sm font-normal text-surface-400">pkt ({totalBundles.toFixed(1).replace(/\.0$/, '')} bdl)</span>
                 </p>
               </div>
               <div className="w-px h-10 bg-surface-700" />

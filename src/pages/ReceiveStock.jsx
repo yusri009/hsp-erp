@@ -36,6 +36,12 @@ function ReceiveStock() {
   // Mutation
   const createPurchaseOrder = useCreatePurchaseOrder()
 
+  // Build a lookup map for products by id
+  const productMap = (products || []).reduce((acc, p) => {
+    acc[p.id] = p
+    return acc
+  }, {})
+
   // Dropdown options
   const vendorOptions = (vendors || []).map((v) => ({
     value: v.id,
@@ -68,6 +74,13 @@ function ReceiveStock() {
     (sum, item) => sum + (parseInt(item.quantity, 10) || 0),
     0
   )
+
+  const totalBundles = lineItems.reduce((sum, item) => {
+    const qty = parseInt(item.quantity, 10) || 0
+    const product = productMap[item.productId]
+    const ppb = product?.packets_per_bundle || 1
+    return sum + (qty / ppb)
+  }, 0)
 
   const isFormValid =
     vendorId &&
@@ -278,12 +291,17 @@ function ReceiveStock() {
                       value={item.quantity}
                       onChange={(e) => updateLineItem(index, 'quantity', e.target.value)}
                       placeholder="0"
-                      className="input-field pr-12"
+                      className="input-field pr-12 tabular-nums"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary-400 bg-primary-500/10 px-1.5 py-0.5 rounded">
                       PKT
                     </span>
                   </div>
+                  {item.quantity && item.productId && (
+                    <p className="mt-1 text-[11px] text-surface-500 font-medium">
+                      ≈ {(parseInt(item.quantity, 10) / (productMap[item.productId]?.packets_per_bundle || 1)).toFixed(1).replace(/\.0$/, '')} Bundles
+                    </p>
+                  )}
                 </div>
 
                 {/* Remove */}
@@ -310,7 +328,7 @@ function ReceiveStock() {
               <div>
                 <p className="text-xs text-surface-500 uppercase tracking-wider">Total Packets</p>
                 <p className="text-xl font-bold text-surface-50 tabular-nums">
-                  {totalPackets} <span className="text-sm font-normal text-surface-400">pkt</span>
+                  {totalPackets} <span className="text-sm font-normal text-surface-400">pkt ({totalBundles.toFixed(1).replace(/\.0$/, '')} bdl)</span>
                 </p>
               </div>
               <div className="w-px h-10 bg-surface-700" />
