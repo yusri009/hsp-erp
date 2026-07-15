@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useProducts } from '../hooks/useProducts'
 import { useVendors } from '../hooks/useVendors'
+import { useCategories } from '../hooks/useCategories'
 import { useCreatePurchaseOrder } from '../hooks/usePurchaseOrders'
 import FilterDropdown from '../components/FilterDropdown'
 
@@ -23,15 +24,17 @@ function ReceiveStock() {
 
   // Form state
   const [vendorId, setVendorId] = useState('')
+  const [invoiceNumber, setInvoiceNumber] = useState('')
   const [invoiceTotal, setInvoiceTotal] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const [lineItems, setLineItems] = useState([{ productId: '', quantity: '', unit_cost: '' }])
+  const [lineItems, setLineItems] = useState([{ categoryId: '', productId: '', quantity: '', unit_cost: '' }])
   const [submitStatus, setSubmitStatus] = useState(null) // null | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
 
   // Queries
   const { data: vendors, isLoading: vendorsLoading } = useVendors()
   const { data: products, isLoading: productsLoading } = useProducts()
+  const { data: categories, isLoading: categoriesLoading } = useCategories()
 
   // Mutation
   const createPurchaseOrder = useCreatePurchaseOrder()
@@ -51,11 +54,17 @@ function ReceiveStock() {
   const productOptions = (products || []).map((p) => ({
     value: p.id,
     label: `${p.sku} — ${p.size || ''} / ${p.color || ''}`.replace(/ — \/ $/, ''),
+    categoryId: p.category_id,
+  }))
+
+  const categoryOptions = (categories || []).map((c) => ({
+    value: c.id,
+    label: c.name,
   }))
 
   // Line item handlers
   const addLineItem = () => {
-    setLineItems((prev) => [...prev, { productId: '', quantity: '', unit_cost: '' }])
+    setLineItems((prev) => [...prev, { categoryId: '', productId: '', quantity: '', unit_cost: '' }])
   }
 
   const removeLineItem = (index) => {
@@ -65,7 +74,14 @@ function ReceiveStock() {
 
   const updateLineItem = (index, field, value) => {
     setLineItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+      prev.map((item, i) => {
+        if (i !== index) return item
+        const updated = { ...item, [field]: value }
+        if (field === 'categoryId') {
+          updated.productId = ''
+        }
+        return updated
+      })
     )
   }
 
@@ -99,6 +115,7 @@ function ReceiveStock() {
     try {
       await createPurchaseOrder.mutateAsync({
         vendorId,
+        invoiceNumber,
         totalCost: parseFloat(invoiceTotal),
         dueDate,
         lineItems: lineItems.map((item) => ({
@@ -113,9 +130,10 @@ function ReceiveStock() {
       // Reset form after a short delay
       setTimeout(() => {
         setVendorId('')
+        setInvoiceNumber('')
         setInvoiceTotal('')
         setDueDate('')
-        setLineItems([{ productId: '', quantity: '', unit_cost: '' }])
+        setLineItems([{ categoryId: '', productId: '', quantity: '', unit_cost: '' }])
         setSubmitStatus(null)
       }, 3000)
     } catch (err) {
@@ -175,7 +193,7 @@ function ReceiveStock() {
             Shipment Details
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {/* Vendor Selection */}
             <FilterDropdown
               label="Vendor"
@@ -185,6 +203,20 @@ function ReceiveStock() {
               placeholder="Select Vendor..."
               disabled={vendorsLoading}
             />
+
+            {/* Invoice Number */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
+                Invoice Number
+              </label>
+              <input
+                type="text"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="e.g. INV-2023-001"
+                className="input-field"
+              />
+            </div>
 
             {/* Invoice Total */}
             <div className="space-y-1.5">
@@ -210,7 +242,7 @@ function ReceiveStock() {
           <div className="max-w-xs space-y-1.5">
             <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
-              Payment Due Date
+              Date
             </label>
             <input
               type="date"
@@ -239,18 +271,35 @@ function ReceiveStock() {
           </div>
 
           <div className="space-y-3">
-            {lineItems.map((item, index) => (
+            {lineItems.map((item, index) => {
+              const filteredProducts = item.categoryId
+                ? productOptions.filter(p => p.categoryId === item.categoryId)
+                : productOptions
+
+              return (
               <div
                 key={index}
                 className="flex flex-col sm:flex-row gap-3 p-4 rounded-xl bg-surface-900/50 border border-surface-700/50 animate-slide-up"
               >
+                {/* Category Filter */}
+                <div className="w-full sm:w-40 min-w-0">
+                  <FilterDropdown
+                    label={index === 0 ? 'Category' : undefined}
+                    value={item.categoryId}
+                    onChange={(val) => updateLineItem(index, 'categoryId', val)}
+                    options={categoryOptions}
+                    placeholder="Any Category"
+                    disabled={categoriesLoading}
+                  />
+                </div>
+
                 {/* Product Select */}
                 <div className="flex-1 min-w-0">
                   <FilterDropdown
                     label={index === 0 ? 'Product' : undefined}
                     value={item.productId}
                     onChange={(val) => updateLineItem(index, 'productId', val)}
-                    options={productOptions}
+                    options={filteredProducts}
                     placeholder="Select product..."
                     disabled={productsLoading}
                   />
@@ -317,7 +366,8 @@ function ReceiveStock() {
                   </button>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 

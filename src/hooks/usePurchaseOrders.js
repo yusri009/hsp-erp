@@ -7,13 +7,14 @@ export function useCreatePurchaseOrder() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ vendorId, totalCost, dueDate, lineItems }) => {
+    mutationFn: async ({ vendorId, invoiceNumber, totalCost, dueDate, lineItems }) => {
       // 1. Create the purchase order
       const { data: purchaseOrder, error: poError } = await supabase
         .from('purchase_orders')
         .insert({
           tenant_id: tenantId,
           vendor_id: vendorId,
+          invoice_number: invoiceNumber || null,
           date: new Date().toISOString().split('T')[0],
           total_cost: totalCost,
           status: 'pending',
