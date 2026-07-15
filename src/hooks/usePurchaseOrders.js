@@ -39,22 +39,32 @@ export function useCreatePurchaseOrder() {
 
       if (itemsError) throw itemsError
 
-      // 3. Update stock quantities for each line item
+      // 3. Update stock quantities and recalculate weighted average cost for each line item
       for (const item of lineItems) {
-        // Get current stock
+        // Get current stock and avg_cost
         const { data: product, error: fetchError } = await supabase
           .from('products')
-          .select('stock_quantity')
+          .select('stock_quantity, avg_cost')
           .eq('id', item.productId)
           .single()
 
         if (fetchError) throw fetchError
 
-        // Update stock
-        const newQuantity = (product.stock_quantity || 0) + item.quantity
+        const currentQty = product.stock_quantity || 0
+        const currentAvgCost = product.avg_cost || 0
+        const newQuantity = currentQty + item.quantity
+
+        // Weighted average: (existing_value + new_value) / total_qty
+        const newAvgCost = newQuantity > 0
+          ? ((currentQty * currentAvgCost) + (item.quantity * item.unit_cost)) / newQuantity
+          : item.unit_cost
+
         const { error: updateError } = await supabase
           .from('products')
-          .update({ stock_quantity: newQuantity })
+          .update({
+            stock_quantity: newQuantity,
+            avg_cost: Math.round(newAvgCost * 100) / 100, // round to 2 decimals
+          })
           .eq('id', item.productId)
 
         if (updateError) throw updateError
