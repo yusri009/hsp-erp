@@ -25,7 +25,6 @@ function ReceiveStock() {
   // Form state
   const [vendorId, setVendorId] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [invoiceTotal, setInvoiceTotal] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [lineItems, setLineItems] = useState([{ categoryId: '', productId: '', quantity: '', unit_cost: '' }])
   const [submitStatus, setSubmitStatus] = useState(null) // null | 'success' | 'error'
@@ -98,9 +97,15 @@ function ReceiveStock() {
     return sum + (qty / ppb)
   }, 0)
 
+  const invoiceTotal = lineItems.reduce((sum, item) => {
+    const qty = parseInt(item.quantity, 10) || 0
+    const cost = parseFloat(item.unit_cost) || 0
+    return sum + (qty * cost)
+  }, 0)
+
   const isFormValid =
     vendorId &&
-    invoiceTotal &&
+    invoiceTotal > 0 &&
     dueDate &&
     lineItems.every((item) => item.productId && item.quantity && parseInt(item.quantity, 10) > 0 && item.unit_cost && parseFloat(item.unit_cost) >= 0)
 
@@ -116,7 +121,7 @@ function ReceiveStock() {
       await createPurchaseOrder.mutateAsync({
         vendorId,
         invoiceNumber,
-        totalCost: parseFloat(invoiceTotal),
+        totalCost: invoiceTotal,
         dueDate,
         lineItems: lineItems.map((item) => ({
           productId: item.productId,
@@ -131,7 +136,6 @@ function ReceiveStock() {
       setTimeout(() => {
         setVendorId('')
         setInvoiceNumber('')
-        setInvoiceTotal('')
         setDueDate('')
         setLineItems([{ categoryId: '', productId: '', quantity: '', unit_cost: '' }])
         setSubmitStatus(null)
@@ -227,12 +231,9 @@ function ReceiveStock() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
                 <input
                   type="number"
-                  step="0.01"
-                  min="0"
-                  value={invoiceTotal}
-                  onChange={(e) => setInvoiceTotal(e.target.value)}
-                  placeholder="0.00"
-                  className="input-field pl-7"
+                  value={invoiceTotal.toFixed(2)}
+                  readOnly
+                  className="input-field pl-7 bg-surface-900/50 text-surface-300 border-surface-700/50 cursor-not-allowed"
                 />
               </div>
             </div>
