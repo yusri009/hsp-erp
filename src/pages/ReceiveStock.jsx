@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import {
   PackagePlus,
@@ -12,7 +12,20 @@ import {
   Calendar,
   Receipt,
   Loader2,
+  RotateCcw,
 } from 'lucide-react'
+
+const DRAFT_KEY = 'draft_receive_stock'
+const EMPTY_LINE = { categoryId: '', productId: '', quantity: '', unit_cost: '' }
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
 import { useProducts } from '../hooks/useProducts'
 import { useVendors } from '../hooks/useVendors'
 import { useCategories } from '../hooks/useCategories'
@@ -22,13 +35,14 @@ import FilterDropdown from '../components/FilterDropdown'
 function ReceiveStock() {
   const navigate = useNavigate()
 
-  // Form state
-  const [vendorId, setVendorId] = useState('')
-  const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [dueDate, setDueDate] = useState('')
-  const [lineItems, setLineItems] = useState([{ categoryId: '', productId: '', quantity: '', unit_cost: '' }])
+  // Form state — initialised from localStorage draft if one exists
+  const [vendorId, setVendorId] = useState(() => loadDraft()?.vendorId ?? '')
+  const [invoiceNumber, setInvoiceNumber] = useState(() => loadDraft()?.invoiceNumber ?? '')
+  const [dueDate, setDueDate] = useState(() => loadDraft()?.dueDate ?? '')
+  const [lineItems, setLineItems] = useState(() => loadDraft()?.lineItems ?? [{ ...EMPTY_LINE }])
   const [submitStatus, setSubmitStatus] = useState(null) // null | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
+  const [hasDraft, setHasDraft] = useState(() => !!localStorage.getItem(DRAFT_KEY))
 
   // Queries
   const { data: vendors, isLoading: vendorsLoading } = useVendors()
@@ -61,9 +75,25 @@ function ReceiveStock() {
     label: c.name,
   }))
 
+  // Auto-save draft to localStorage whenever form state changes
+  useEffect(() => {
+    const draft = { vendorId, invoiceNumber, dueDate, lineItems }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    setHasDraft(true)
+  }, [vendorId, invoiceNumber, dueDate, lineItems])
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY)
+    setVendorId('')
+    setInvoiceNumber('')
+    setDueDate('')
+    setLineItems([{ ...EMPTY_LINE }])
+    setHasDraft(false)
+  }
+
   // Line item handlers
   const addLineItem = () => {
-    setLineItems((prev) => [...prev, { categoryId: '', productId: '', quantity: '', unit_cost: '' }])
+    setLineItems((prev) => [...prev, { ...EMPTY_LINE }])
   }
 
   const removeLineItem = (index) => {
@@ -130,6 +160,9 @@ function ReceiveStock() {
         })),
       })
 
+      // Clear draft on success
+      localStorage.removeItem(DRAFT_KEY)
+      setHasDraft(false)
       setSubmitStatus('success')
 
       // Reset form after a short delay
@@ -137,7 +170,7 @@ function ReceiveStock() {
         setVendorId('')
         setInvoiceNumber('')
         setDueDate('')
-        setLineItems([{ categoryId: '', productId: '', quantity: '', unit_cost: '' }])
+        setLineItems([{ ...EMPTY_LINE }])
         setSubmitStatus(null)
       }, 3000)
     } catch (err) {
@@ -157,11 +190,19 @@ function ReceiveStock() {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div>
-          <h1 className="text-2xl font-bold text-surface-50 flex items-center gap-2.5">
-            <Truck className="w-6 h-6 text-primary-400" />
-            Receive Stock
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-surface-50 flex items-center gap-2.5">
+              <Truck className="w-6 h-6 text-primary-400" />
+              Receive Stock
+            </h1>
+            {hasDraft && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Draft saved
+              </span>
+            )}
+          </div>
           <p className="text-sm text-surface-400 mt-0.5">
             Record incoming factory shipments — quantities in <span className="font-semibold text-primary-400">Packets</span>
           </p>
@@ -261,14 +302,6 @@ function ReceiveStock() {
               <Package className="w-4 h-4 text-surface-400" />
               Products Received
             </h2>
-            <button
-              type="button"
-              onClick={addLineItem}
-              className="btn-secondary text-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Product
-            </button>
           </div>
 
           <div className="space-y-3">
@@ -369,6 +402,15 @@ function ReceiveStock() {
               </div>
               )
             })}
+            
+            <button
+              type="button"
+              onClick={addLineItem}
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-surface-700 text-surface-400 hover:text-primary-400 hover:border-primary-500/50 hover:bg-primary-500/5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">Add Product</span>
+            </button>
           </div>
         </div>
 
@@ -391,23 +433,36 @@ function ReceiveStock() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={!isFormValid || createPurchaseOrder.isPending}
-              className="btn-primary w-full sm:w-auto"
-            >
-              {createPurchaseOrder.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Recording...
-                </>
-              ) : (
-                <>
-                  <PackagePlus className="w-4 h-4" />
-                  Record Shipment
-                </>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              {hasDraft && (
+                <button
+                  type="button"
+                  onClick={clearDraft}
+                  className="flex items-center gap-1.5 text-xs text-surface-500 hover:text-danger-400 transition-colors"
+                  title="Clear draft and reset form"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Clear Draft
+                </button>
               )}
-            </button>
+              <button
+                type="submit"
+                disabled={!isFormValid || createPurchaseOrder.isPending}
+                className="btn-primary flex-1 sm:flex-none text-base px-6 py-3"
+              >
+                {createPurchaseOrder.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Recording...
+                  </>
+                ) : (
+                  <>
+                    <PackagePlus className="w-4 h-4" />
+                    Record Shipment
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </form>

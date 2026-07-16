@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import {
   ArrowLeft,
@@ -11,7 +11,20 @@ import {
   CheckCircle2,
   AlertCircle,
   Receipt,
+  RotateCcw,
 } from 'lucide-react'
+
+const DRAFT_KEY = 'draft_new_sale'
+const EMPTY_LINE = { categoryId: '', productId: '', quantity: '', unitPrice: 0 }
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
 import { useProducts } from '../hooks/useProducts'
 import { useCustomers } from '../hooks/useCustomers'
 import { useCategories } from '../hooks/useCategories'
@@ -21,13 +34,12 @@ import FilterDropdown from '../components/FilterDropdown'
 function NewSale() {
   const navigate = useNavigate()
 
-  // Form state
-  const [customerId, setCustomerId] = useState('')
-  const [lineItems, setLineItems] = useState([
-    { categoryId: '', productId: '', quantity: '', unitPrice: 0 },
-  ])
+  // Form state — initialised from localStorage draft if one exists
+  const [customerId, setCustomerId] = useState(() => loadDraft()?.customerId ?? '')
+  const [lineItems, setLineItems] = useState(() => loadDraft()?.lineItems ?? [EMPTY_LINE])
   const [submitStatus, setSubmitStatus] = useState(null) // null | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
+  const [hasDraft, setHasDraft] = useState(() => !!localStorage.getItem(DRAFT_KEY))
 
   // Queries
   const { data: customers, isLoading: customersLoading } = useCustomers()
@@ -68,9 +80,23 @@ function NewSale() {
     [categories]
   )
 
+  // Auto-save draft to localStorage whenever form state changes
+  useEffect(() => {
+    const draft = { customerId, lineItems }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    setHasDraft(true)
+  }, [customerId, lineItems])
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY)
+    setCustomerId('')
+    setLineItems([EMPTY_LINE])
+    setHasDraft(false)
+  }
+
   // Line item handlers
   const addLineItem = () => {
-    setLineItems((prev) => [...prev, { categoryId: '', productId: '', quantity: '', unitPrice: 0 }])
+    setLineItems((prev) => [...prev, { ...EMPTY_LINE }])
   }
 
   const removeLineItem = (index) => {
@@ -152,6 +178,9 @@ function NewSale() {
         })),
       })
 
+      // Clear draft on success
+      localStorage.removeItem(DRAFT_KEY)
+      setHasDraft(false)
       setSubmitStatus('success')
       setTimeout(() => navigate('/sales'), 1500)
     } catch (err) {
@@ -171,11 +200,19 @@ function NewSale() {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div>
-          <h1 className="text-2xl font-bold text-surface-50 flex items-center gap-2.5">
-            <ShoppingCart className="w-6 h-6 text-primary-400" />
-            New Order
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-surface-50 flex items-center gap-2.5">
+              <ShoppingCart className="w-6 h-6 text-primary-400" />
+              New Order
+            </h1>
+            {hasDraft && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Draft saved
+              </span>
+            )}
+          </div>
           <p className="text-sm text-surface-400 mt-0.5">
             Quick order entry — quantities in <span className="font-semibold text-primary-400">Packets</span>
           </p>
@@ -246,14 +283,6 @@ function NewSale() {
               <Package className="w-4 h-4 text-surface-400" />
               Order Items
             </h2>
-            <button
-              type="button"
-              onClick={addLineItem}
-              className="btn-secondary text-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Another Product
-            </button>
           </div>
 
           {/* Column Headers (desktop) */}
@@ -362,6 +391,15 @@ function NewSale() {
                 </div>
               )
             })}
+            
+            <button
+              type="button"
+              onClick={addLineItem}
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-surface-700 text-surface-400 hover:text-primary-400 hover:border-primary-500/50 hover:bg-primary-500/5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">Add Another Product</span>
+            </button>
           </div>
         </div>
 
@@ -391,23 +429,36 @@ function NewSale() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={!isFormValid || createSalesOrder.isPending}
-              className="btn-primary w-full sm:w-auto text-base px-6 py-3"
-            >
-              {createSalesOrder.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Receipt className="w-4 h-4" />
-                  Save Order
-                </>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              {hasDraft && (
+                <button
+                  type="button"
+                  onClick={clearDraft}
+                  className="flex items-center gap-1.5 text-xs text-surface-500 hover:text-danger-400 transition-colors"
+                  title="Clear draft and reset form"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Clear Draft
+                </button>
               )}
-            </button>
+              <button
+                type="submit"
+                disabled={!isFormValid || createSalesOrder.isPending}
+                className="btn-primary flex-1 sm:flex-none text-base px-6 py-3"
+              >
+                {createSalesOrder.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Receipt className="w-4 h-4" />
+                    Save Order
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </form>

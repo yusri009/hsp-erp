@@ -12,6 +12,7 @@ import {
   useDeleteProduct,
 } from '../hooks/useProducts'
 import { useCategories, useAddCategory, useUpdateCategory, useDeleteCategory } from '../hooks/useCategories'
+import { usePurchaseOrders, useUpdatePurchaseOrderStatus } from '../hooks/usePurchaseOrders'
 
 function InventoryDashboard() {
   const [activeTab, setActiveTab] = useState('products')
@@ -29,6 +30,8 @@ function InventoryDashboard() {
     size: selectedSize,
     color: selectedColor,
   })
+  
+  const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = usePurchaseOrders()
 
   // Mutations
   const addCategory = useAddCategory()
@@ -37,6 +40,7 @@ function InventoryDashboard() {
   const addProduct = useAddProduct()
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
+  const updatePurchaseOrderStatus = useUpdatePurchaseOrderStatus()
 
   // --- Add Category State ---
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
@@ -241,19 +245,83 @@ function InventoryDashboard() {
       header: '',
       sortable: false,
       render: (_, row) => (
-        <div className="flex items-center justify-end">
+        <div className="flex justify-end gap-2">
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              openCategoryModal(row)
-            }}
+            onClick={() => handleEditCategoryClick(row)}
             className="p-1.5 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-colors"
             title="Edit Category"
           >
             <Edit2 className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => handleDeleteCategoryClick(row)}
+            className="p-1.5 text-surface-400 hover:text-danger-400 hover:bg-danger-500/10 rounded transition-colors"
+            title="Delete Category"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       ),
+    },
+  ]
+
+  // Columns for Receiving History
+  const historyColumns = [
+    {
+      key: 'date',
+      header: 'Date',
+      sortable: true,
+      render: (val) => new Date(val).toLocaleDateString(),
+    },
+    {
+      key: 'invoice_number',
+      header: 'Invoice #',
+      render: (val) => val || '—',
+    },
+    {
+      key: 'vendor',
+      header: 'Vendor',
+      render: (_, row) => row.vendors?.name || '—',
+    },
+    {
+      key: 'total_cost',
+      header: 'Total Cost',
+      sortable: true,
+      render: (val) => (
+        <span className="tabular-nums font-medium text-surface-200">
+          Rs.{Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (val, row) => {
+        const isPaid = val === 'paid'
+        const isPendingToggle = updatePurchaseOrderStatus.isPending && updatePurchaseOrderStatus.variables?.orderId === row.id
+
+        return (
+          <button
+            onClick={() => updatePurchaseOrderStatus.mutate({ 
+              orderId: row.id, 
+              status: isPaid ? 'pending' : 'paid' 
+            })}
+            disabled={isPendingToggle}
+            className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border transition-colors flex items-center justify-center min-w-[70px] ${
+              isPaid
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+            } ${isPendingToggle ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={`Click to mark as ${isPaid ? 'pending' : 'paid'}`}
+          >
+            {isPendingToggle ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              val
+            )}
+          </button>
+        )
+      },
     },
   ]
 
@@ -393,6 +461,14 @@ function InventoryDashboard() {
         >
           Categories
         </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === 'history' ? 'border-primary-500 text-primary-400' : 'border-transparent text-surface-400 hover:text-surface-200'
+          }`}
+        >
+          Receiving History
+        </button>
       </div>
 
       {activeTab === 'products' ? (
@@ -458,13 +534,22 @@ function InventoryDashboard() {
             />
           </div>
         </>
-      ) : (
+      ) : activeTab === 'categories' ? (
         <div className="animate-slide-up">
           <DataTable
             columns={categoryColumns}
             data={categories}
             isLoading={categoriesLoading}
             emptyMessage="No categories found."
+          />
+        </div>
+      ) : (
+        <div className="animate-slide-up">
+          <DataTable
+            columns={historyColumns}
+            data={purchaseOrders}
+            isLoading={purchaseOrdersLoading}
+            emptyMessage="No stock receiving history found."
           />
         </div>
       )}

@@ -1,6 +1,31 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+
+export function usePurchaseOrders() {
+  const { tenantId } = useAuth()
+
+  return useQuery({
+    queryKey: ['purchase_orders', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .select(`
+          *,
+          vendors (
+            name
+          )
+        `)
+        .eq('tenant_id', tenantId)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data
+    },
+    enabled: !!tenantId,
+  })
+}
 
 export function useCreatePurchaseOrder() {
   const { tenantId } = useAuth()
@@ -93,6 +118,27 @@ export function useCreatePurchaseOrder() {
       // Invalidate product and vendor queries to refetch updated data
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['vendors'] })
+    },
+  })
+}
+
+export function useUpdatePurchaseOrderStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ orderId, status }) => {
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .update({ status })
+        .eq('id', orderId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase_orders'] })
     },
   })
 }
