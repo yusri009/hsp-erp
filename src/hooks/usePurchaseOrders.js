@@ -17,7 +17,7 @@ export function usePurchaseOrders() {
           )
         `)
         .eq('tenant_id', tenantId)
-        .order('date', { ascending: false })
+        .order('bill_date', { ascending: false })
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -32,7 +32,7 @@ export function useCreatePurchaseOrder() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ vendorId, invoiceNumber, totalCost, dueDate, lineItems }) => {
+    mutationFn: async ({ vendorId, invoiceNumber, totalCost, billDate, lineItems }) => {
       // 1. Create the purchase order
       const { data: purchaseOrder, error: poError } = await supabase
         .from('purchase_orders')
@@ -40,10 +40,9 @@ export function useCreatePurchaseOrder() {
           tenant_id: tenantId,
           vendor_id: vendorId,
           invoice_number: invoiceNumber || null,
-          date: new Date().toISOString().split('T')[0],
+          bill_date: billDate,
           total_cost: totalCost,
           status: 'pending',
-          due_date: dueDate,
         })
         .select()
         .single()

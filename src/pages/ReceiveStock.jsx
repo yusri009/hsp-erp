@@ -38,7 +38,7 @@ function ReceiveStock() {
   // Form state — initialised from localStorage draft if one exists
   const [vendorId, setVendorId] = useState(() => loadDraft()?.vendorId ?? '')
   const [invoiceNumber, setInvoiceNumber] = useState(() => loadDraft()?.invoiceNumber ?? '')
-  const [dueDate, setDueDate] = useState(() => loadDraft()?.dueDate ?? '')
+  const [billDate, setBillDate] = useState(() => loadDraft()?.billDate ?? '')
   const [lineItems, setLineItems] = useState(() => loadDraft()?.lineItems ?? [{ ...EMPTY_LINE }])
   const [submitStatus, setSubmitStatus] = useState(null) // null | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
@@ -77,16 +77,16 @@ function ReceiveStock() {
 
   // Auto-save draft to localStorage whenever form state changes
   useEffect(() => {
-    const draft = { vendorId, invoiceNumber, dueDate, lineItems }
+    const draft = { vendorId, invoiceNumber, billDate, lineItems }
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
     setHasDraft(true)
-  }, [vendorId, invoiceNumber, dueDate, lineItems])
+  }, [vendorId, invoiceNumber, billDate, lineItems])
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY)
     setVendorId('')
     setInvoiceNumber('')
-    setDueDate('')
+    setBillDate('')
     setLineItems([{ ...EMPTY_LINE }])
     setHasDraft(false)
   }
@@ -136,7 +136,7 @@ function ReceiveStock() {
   const isFormValid =
     vendorId &&
     invoiceTotal > 0 &&
-    dueDate &&
+    billDate &&
     lineItems.every((item) => item.productId && item.quantity && parseInt(item.quantity, 10) > 0 && item.unit_cost && parseFloat(item.unit_cost) >= 0)
 
   // Submit handler
@@ -152,7 +152,7 @@ function ReceiveStock() {
         vendorId,
         invoiceNumber,
         totalCost: invoiceTotal,
-        dueDate,
+        billDate,
         lineItems: lineItems.map((item) => ({
           productId: item.productId,
           quantity: parseInt(item.quantity, 10),
@@ -169,7 +169,7 @@ function ReceiveStock() {
       setTimeout(() => {
         setVendorId('')
         setInvoiceNumber('')
-        setDueDate('')
+        setBillDate('')
         setLineItems([{ ...EMPTY_LINE }])
         setSubmitStatus(null)
       }, 3000)
@@ -280,16 +280,16 @@ function ReceiveStock() {
             </div>
           </div>
 
-          {/* Due Date */}
+          {/* Bill Date */}
           <div className="max-w-xs space-y-1.5">
             <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
-              Date
+              Bill Date
             </label>
             <input
               type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              value={billDate}
+              onChange={(e) => setBillDate(e.target.value)}
               className="input-field"
             />
           </div>

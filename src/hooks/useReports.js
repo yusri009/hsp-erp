@@ -36,11 +36,11 @@ export function usePurchaseReport({ startDate, endDate, vendorId, enabled }) {
     queryFn: async () => {
       let query = supabase
         .from('purchase_orders')
-        .select('id, date, total_cost, status, vendors(name)')
+        .select('id, bill_date, total_cost, status, vendors(name)')
         .eq('tenant_id', tenantId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false })
+        .gte('bill_date', startDate)
+        .lte('bill_date', endDate)
+        .order('bill_date', { ascending: false })
 
       if (vendorId) {
         query = query.eq('vendor_id', vendorId)

@@ -268,7 +268,7 @@ function InventoryDashboard() {
   // Columns for Receiving History
   const historyColumns = [
     {
-      key: 'date',
+      key: 'bill_date',
       header: 'Date',
       sortable: true,
       render: (val) => new Date(val).toLocaleDateString(),
@@ -467,7 +467,7 @@ function InventoryDashboard() {
             activeTab === 'history' ? 'border-primary-500 text-primary-400' : 'border-transparent text-surface-400 hover:text-surface-200'
           }`}
         >
-          Receiving History
+          Bill History
         </button>
       </div>
 
@@ -549,7 +549,7 @@ function InventoryDashboard() {
             columns={historyColumns}
             data={purchaseOrders}
             isLoading={purchaseOrdersLoading}
-            emptyMessage="No stock receiving history found."
+            emptyMessage="No bill history found."
           />
         </div>
       )}
