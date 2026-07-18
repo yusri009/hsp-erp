@@ -758,6 +758,7 @@ function InventoryDashboard() {
               </label>
               <input
                 type="number"
+                step="any"
                 value={newProdStock}
                 onChange={(e) => setNewProdStock(e.target.value)}
                 placeholder="e.g. 100"

@@ -54,6 +54,7 @@ export function useCreatePurchaseOrder() {
         purchase_order_id: purchaseOrder.id,
         product_id: item.productId,
         quantity: item.quantity,
+        unit: item.unit,
         unit_cost: item.unit_cost
       }))
 

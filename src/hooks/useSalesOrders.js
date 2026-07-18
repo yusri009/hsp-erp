@@ -52,6 +52,7 @@ export function useCreateSalesOrder() {
         order_id: salesOrder.id,
         product_id: item.productId,
         quantity: item.quantity,
+        unit: item.unit,
         unit_price: item.unitPrice,
       }))
 

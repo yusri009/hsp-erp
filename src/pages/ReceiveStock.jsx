@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 
 const DRAFT_KEY = 'draft_receive_stock'
-const EMPTY_LINE = { categoryId: '', productId: '', quantity: '', unit_cost: '' }
+const EMPTY_LINE = { categoryId: '', productId: '', quantity: '', unit: 'PKT', unit_cost: '' }
 
 function loadDraft() {
   try {
@@ -116,19 +116,19 @@ function ReceiveStock() {
 
   // Summary calculations
   const totalPackets = lineItems.reduce(
-    (sum, item) => sum + (parseInt(item.quantity, 10) || 0),
+    (sum, item) => sum + (parseFloat(item.quantity) || 0),
     0
   )
 
   const totalBundles = lineItems.reduce((sum, item) => {
-    const qty = parseInt(item.quantity, 10) || 0
+    const qty = parseFloat(item.quantity) || 0
     const product = productMap[item.productId]
     const ppb = product?.packets_per_bundle || 1
     return sum + (qty / ppb)
   }, 0)
 
   const invoiceTotal = lineItems.reduce((sum, item) => {
-    const qty = parseInt(item.quantity, 10) || 0
+    const qty = parseFloat(item.quantity) || 0
     const cost = parseFloat(item.unit_cost) || 0
     return sum + (qty * cost)
   }, 0)
@@ -137,7 +137,7 @@ function ReceiveStock() {
     vendorId &&
     invoiceTotal > 0 &&
     billDate &&
-    lineItems.every((item) => item.productId && item.quantity && parseInt(item.quantity, 10) > 0 && item.unit_cost && parseFloat(item.unit_cost) >= 0)
+    lineItems.every((item) => item.productId && item.quantity && parseFloat(item.quantity) > 0 && item.unit_cost && parseFloat(item.unit_cost) >= 0)
 
   // Submit handler
   const handleSubmit = async (e) => {
@@ -155,7 +155,8 @@ function ReceiveStock() {
         billDate,
         lineItems: lineItems.map((item) => ({
           productId: item.productId,
-          quantity: parseInt(item.quantity, 10),
+          quantity: parseFloat(item.quantity),
+          unit: item.unit,
           unit_cost: parseFloat(item.unit_cost),
         })),
       })
@@ -361,28 +362,34 @@ function ReceiveStock() {
                 </div>
 
                 {/* Quantity */}
-                <div className="w-full sm:w-32">
+                <div className="w-full sm:w-40 flex flex-col justify-end">
                   {index === 0 && (
                     <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5">
-                      Packets
+                      Quantity
                     </label>
                   )}
-                  <div className="relative">
+                  <div className="flex bg-surface-900 border border-surface-700/50 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all h-[42px]">
                     <input
                       type="number"
-                      min="1"
+                      step="any"
+                      min="0.001"
                       value={item.quantity}
                       onChange={(e) => updateLineItem(index, 'quantity', e.target.value)}
                       placeholder="0"
-                      className="input-field pr-12 tabular-nums"
+                      className="w-full bg-transparent text-surface-200 placeholder-surface-500 px-3 py-2 outline-none text-sm tabular-nums"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary-400 bg-primary-500/10 px-1.5 py-0.5 rounded">
-                      PKT
-                    </span>
+                    <select
+                      value={item.unit}
+                      onChange={(e) => updateLineItem(index, 'unit', e.target.value)}
+                      className="bg-surface-800 text-surface-300 text-xs font-medium px-2 py-2 border-l border-surface-700/50 outline-none focus:ring-0 cursor-pointer hover:text-surface-100"
+                    >
+                      <option value="PKT">PKT</option>
+                      <option value="KG">KG</option>
+                    </select>
                   </div>
-                  {item.quantity && item.productId && (
+                  {item.quantity && item.productId && item.unit === 'PKT' && (
                     <p className="mt-1 text-[11px] text-surface-500 font-medium">
-                      ≈ {(parseInt(item.quantity, 10) / (productMap[item.productId]?.packets_per_bundle || 1)).toFixed(1).replace(/\.0$/, '')} Bundles
+                      ≈ {(parseFloat(item.quantity) / (productMap[item.productId]?.packets_per_bundle || 1)).toFixed(1).replace(/\.0$/, '')} Bundles
                     </p>
                   )}
                 </div>
