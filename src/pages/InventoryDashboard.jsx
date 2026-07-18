@@ -58,6 +58,7 @@ function InventoryDashboard() {
   const [newProdSize, setNewProdSize] = useState('')
   const [newProdColor, setNewProdColor] = useState('')
   const [newProdStock, setNewProdStock] = useState('')
+  const [newProdBaseUnit, setNewProdBaseUnit] = useState('PKT')
   const [newProdPacketsPerBundle, setNewProdPacketsPerBundle] = useState('1')
   const [newProdAvgCost, setNewProdAvgCost] = useState('')
   const [newProdSellingPrice, setNewProdSellingPrice] = useState('')
@@ -123,6 +124,7 @@ function InventoryDashboard() {
       setNewProdSize(product.size || '')
       setNewProdColor(product.color || '')
       setNewProdStock(product.stock_quantity !== null && product.stock_quantity !== undefined ? product.stock_quantity : '')
+      setNewProdBaseUnit(product.base_unit || 'PKT')
       setNewProdPacketsPerBundle(product.packets_per_bundle || '1')
       setNewProdAvgCost(product.avg_cost || '')
       setNewProdSellingPrice(product.selling_price || '')
@@ -132,6 +134,7 @@ function InventoryDashboard() {
       setNewProdSize('')
       setNewProdColor('')
       setNewProdStock('')
+      setNewProdBaseUnit('PKT')
       setNewProdPacketsPerBundle('1')
       setNewProdAvgCost('')
       setNewProdSellingPrice('')
@@ -193,6 +196,7 @@ function InventoryDashboard() {
           size: newProdSize,
           color: newProdColor,
           stockQuantity: newProdStock,
+          baseUnit: newProdBaseUnit,
           packetsPerBundle: newProdPacketsPerBundle,
           avgCost: newProdAvgCost,
           sellingPrice: newProdSellingPrice,
@@ -204,6 +208,7 @@ function InventoryDashboard() {
           size: newProdSize,
           color: newProdColor,
           stockQuantity: newProdStock,
+          baseUnit: newProdBaseUnit,
           packetsPerBundle: newProdPacketsPerBundle,
           avgCost: newProdAvgCost,
           sellingPrice: newProdSellingPrice,
@@ -364,7 +369,7 @@ function InventoryDashboard() {
 
     {
       key: 'avg_cost',
-      header: 'Cost / Pkt',
+      header: 'Cost / Unit',
       sortable: true,
       render: (val) => (
         <span className="tabular-nums text-surface-300">
@@ -374,7 +379,7 @@ function InventoryDashboard() {
     },
     {
       key: 'selling_price',
-      header: 'Price / Pkt',
+      header: 'Price / Unit',
       sortable: true,
       render: (val) => (
         <span className="tabular-nums font-medium text-emerald-400">
@@ -384,10 +389,11 @@ function InventoryDashboard() {
     },
     {
       key: 'stock_quantity',
-      header: 'Stock (Packets & Bundles)',
+      header: 'Stock & Bundles',
       sortable: true,
       render: (val, row) => {
         const isLow = val < 10
+        const unitStr = row.base_unit || 'PKT'
         const ppb = row.packets_per_bundle || 1
         const bundles = (val / ppb).toFixed(1).replace(/\.0$/, '')
         return (
@@ -397,7 +403,7 @@ function InventoryDashboard() {
                 className={`tabular-nums font-bold ${isLow ? 'text-danger-400' : 'text-primary-400'
                   }`}
               >
-                {val} Pkt
+                {val} {unitStr}
               </span>
               {isLow && (
                 <span className="badge bg-danger-500/10 text-danger-400 border border-danger-500/20">
@@ -405,9 +411,11 @@ function InventoryDashboard() {
                 </span>
               )}
             </div>
-            <span className="text-xs text-surface-400 tabular-nums">
-              ({bundles} Bdl)
-            </span>
+            {unitStr === 'PKT' && (
+              <span className="text-xs text-surface-400 tabular-nums">
+                ({bundles} Bdl)
+              </span>
+            )}
           </div>
         )
       },
@@ -752,35 +760,50 @@ function InventoryDashboard() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
-                Currently Available Stock
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={newProdStock}
-                onChange={(e) => setNewProdStock(e.target.value)}
-                placeholder="e.g. 100"
-                min="0"
-                className="input-field"
-                disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
+                  Currently Available Stock
+                </label>
+                <div className="flex bg-surface-900 border border-surface-700/50 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all h-[42px]">
+                  <input
+                    type="number"
+                    step="any"
+                    value={newProdStock}
+                    onChange={(e) => setNewProdStock(e.target.value)}
+                    placeholder="e.g. 100"
+                    min="0"
+                    className="w-full bg-transparent text-surface-200 placeholder-surface-500 px-3 py-2 outline-none text-sm tabular-nums"
+                    disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
+                  />
+                  <select
+                    value={newProdBaseUnit}
+                    onChange={(e) => setNewProdBaseUnit(e.target.value)}
+                    className="bg-surface-800 text-surface-300 text-xs font-medium px-2 py-2 border-l border-surface-700/50 outline-none focus:ring-0 cursor-pointer hover:text-surface-100"
+                    disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
+                  >
+                    <option value="PKT">PKT</option>
+                    <option value="KG">KG</option>
+                  </select>
+                </div>
+              </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
-                Packets per Bundle
-              </label>
-              <input
-                type="number"
-                value={newProdPacketsPerBundle}
-                onChange={(e) => setNewProdPacketsPerBundle(e.target.value)}
-                placeholder="e.g. 10"
-                min="1"
-                className="input-field"
-                disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
-              />
+              {newProdBaseUnit === 'PKT' && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-surface-400 uppercase tracking-wider">
+                    Packets per Bundle
+                  </label>
+                  <input
+                    type="number"
+                    value={newProdPacketsPerBundle}
+                    onChange={(e) => setNewProdPacketsPerBundle(e.target.value)}
+                    placeholder="e.g. 10"
+                    min="1"
+                    className="input-field"
+                    disabled={prodSubmitStatus === 'loading' || prodSubmitStatus === 'success'}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

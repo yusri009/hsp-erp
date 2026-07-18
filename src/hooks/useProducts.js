@@ -111,7 +111,7 @@ export function useAddProduct() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ categoryId, sku, size, color, stockQuantity, avgCost, sellingPrice, packetsPerBundle }) => {
+    mutationFn: async ({ categoryId, sku, size, color, stockQuantity, avgCost, sellingPrice, packetsPerBundle, baseUnit }) => {
       const { data, error } = await supabase
         .from('products')
         .insert([{
@@ -123,7 +123,8 @@ export function useAddProduct() {
           avg_cost: avgCost ? Number(avgCost) : 0,
           selling_price: sellingPrice ? Number(sellingPrice) : 0,
           stock_quantity: stockQuantity ? Number(stockQuantity) : 0,
-          packets_per_bundle: packetsPerBundle ? Number(packetsPerBundle) : 1
+          packets_per_bundle: packetsPerBundle ? Number(packetsPerBundle) : 1,
+          base_unit: baseUnit || 'PKT'
         }])
         .select()
         .single()
@@ -142,7 +143,7 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, categoryId, sku, size, color, stockQuantity, avgCost, sellingPrice, packetsPerBundle }) => {
+    mutationFn: async ({ id, categoryId, sku, size, color, stockQuantity, avgCost, sellingPrice, packetsPerBundle, baseUnit }) => {
       const { data, error } = await supabase
         .from('products')
         .update({
@@ -153,7 +154,8 @@ export function useUpdateProduct() {
           avg_cost: avgCost ? Number(avgCost) : 0,
           selling_price: sellingPrice ? Number(sellingPrice) : 0,
           stock_quantity: stockQuantity ? Number(stockQuantity) : 0,
-          packets_per_bundle: packetsPerBundle ? Number(packetsPerBundle) : 1
+          packets_per_bundle: packetsPerBundle ? Number(packetsPerBundle) : 1,
+          base_unit: baseUnit || 'PKT'
         })
         .eq('id', id)
         .eq('tenant_id', tenantId)
