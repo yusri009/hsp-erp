@@ -228,6 +228,20 @@ function InventoryDashboard() {
   const sizeOptions = sizes?.map((s) => ({ value: s, label: s })) || []
   const colorOptions = colors?.map((c) => ({ value: c, label: c })) || []
 
+  const handleEditCategoryClick = (row) => {
+    openCategoryModal(row)
+  }
+
+  const handleDeleteCategoryClick = async (row) => {
+    if (!window.confirm('Are you sure you want to completely delete this category? This might also affect related products.')) return
+    
+    try {
+      await deleteCategory.mutateAsync(row.id)
+    } catch (err) {
+      alert(err.message || 'Failed to delete category')
+    }
+  }
+
   const categoryColumns = [
     {
       key: 'name',
