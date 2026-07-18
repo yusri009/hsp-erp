@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 const DRAFT_KEY = 'draft_new_sale'
-const EMPTY_LINE = { categoryId: '', productId: '', quantity: '', unit: 'PKT', unitPrice: 0 }
+const EMPTY_LINE = { categoryId: '', productId: '', quantity: '', unit: 'PKT', unitPrice: '', avgCost: 0 }
 
 function loadDraft() {
   try {
@@ -120,7 +120,8 @@ function NewSale() {
         if (field === 'productId' && value) {
           const product = productMap[value]
           if (product) {
-            updated.unitPrice = product.selling_price || 0
+            updated.unitPrice = product.selling_price || ''
+            updated.avgCost = product.avg_cost || 0
           }
         }
         return updated
@@ -128,10 +129,10 @@ function NewSale() {
     )
   }
 
-  // Calculations
   const getLineTotal = (item) => {
     const qty = parseFloat(item.quantity) || 0
-    return qty * (item.unitPrice || 0)
+    const price = parseFloat(item.unitPrice) || 0
+    return qty * price
   }
 
   const grandTotal = useMemo(
@@ -156,7 +157,7 @@ function NewSale() {
     customerId &&
     lineItems.length > 0 &&
     lineItems.every(
-      (item) => item.productId && item.quantity && parseFloat(item.quantity) > 0
+      (item) => item.productId && item.quantity && parseFloat(item.quantity) > 0 && item.unitPrice && parseFloat(item.unitPrice) > 0
     )
 
   // Submit
@@ -175,7 +176,8 @@ function NewSale() {
           productId: item.productId,
           quantity: parseFloat(item.quantity),
           unit: item.unit,
-          unitPrice: item.unitPrice,
+          unitPrice: parseFloat(item.unitPrice),
+          avgCost: parseFloat(item.avgCost || 0),
         })),
       })
 
@@ -287,11 +289,11 @@ function NewSale() {
           </div>
 
           {/* Column Headers (desktop) */}
-          <div className="hidden sm:grid sm:grid-cols-[160px_1fr_120px_140px_40px] gap-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wider">
+          <div className="hidden sm:grid sm:grid-cols-[150px_1fr_160px_150px_40px] gap-3 px-4 text-xs font-medium text-surface-500 uppercase tracking-wider">
             <span>Category</span>
             <span>Product</span>
-            <span>Packets</span>
-            <span>Line Total</span>
+            <span>Quantity</span>
+            <span>Selling Price</span>
             <span></span>
           </div>
 
@@ -306,7 +308,7 @@ function NewSale() {
               return (
                 <div
                   key={index}
-                  className="flex flex-col sm:grid sm:grid-cols-[160px_1fr_120px_140px_40px] gap-3 p-4 rounded-xl bg-surface-900/50 border border-surface-700/50 animate-slide-up"
+                  className="flex flex-col sm:grid sm:grid-cols-[150px_1fr_160px_150px_40px] gap-3 p-4 rounded-xl bg-surface-900/50 border border-surface-700/50 animate-slide-up"
                 >
                   {/* Category Select */}
                   <div className="min-w-0">
@@ -343,7 +345,7 @@ function NewSale() {
                   </div>
 
                   {/* Quantity */}
-                  <div className="w-full sm:w-40 flex flex-col justify-end">
+                  <div className="w-full flex flex-col justify-start">
                     <label className="sm:hidden block text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5">
                       Quantity
                     </label>
@@ -373,14 +375,28 @@ function NewSale() {
                     )}
                   </div>
 
-                  {/* Line Total (read-only) */}
-                  <div>
+                  {/* Selling Price */}
+                  <div className="w-full flex flex-col justify-start">
                     <label className="sm:hidden block text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5">
-                      Line Total
+                      Selling Price
                     </label>
-                    <div className="input-field bg-surface-800/50 flex items-center tabular-nums font-semibold text-surface-100 cursor-default">
-                      Rs.{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    <div className="relative h-[42px]">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-surface-500 font-medium">Rs.</span>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={item.unitPrice}
+                        onChange={(e) => updateLineItem(index, 'unitPrice', e.target.value)}
+                        placeholder="0.00"
+                        className="input-field pl-8 h-full tabular-nums"
+                      />
                     </div>
+                    {item.quantity && item.unitPrice && (
+                      <p className="mt-1 text-[11px] text-surface-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                        Tot: Rs. {lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    )}
                   </div>
 
                   {/* Remove */}

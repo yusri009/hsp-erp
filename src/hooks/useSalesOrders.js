@@ -54,6 +54,7 @@ export function useCreateSalesOrder() {
         quantity: item.quantity,
         unit: item.unit,
         unit_price: item.unitPrice,
+        avg_cost: item.avgCost,
       }))
 
       const { error: itemsError } = await supabase
