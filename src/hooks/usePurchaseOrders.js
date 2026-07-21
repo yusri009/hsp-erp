@@ -14,6 +14,19 @@ export function usePurchaseOrders() {
           *,
           vendors (
             name
+          ),
+          purchase_order_items (
+            quantity,
+            unit_cost,
+            unit,
+            products (
+              sku,
+              size,
+              color,
+              categories (
+                name
+              )
+            )
           )
         `)
         .eq('tenant_id', tenantId)
@@ -55,7 +68,7 @@ export function useCreatePurchaseOrder() {
         product_id: item.productId,
         quantity: item.quantity,
         unit: item.unit,
-        unit_cost: item.unit_cost
+        unit_cost: item.unitCost
       }))
 
       const { error: itemsError } = await supabase

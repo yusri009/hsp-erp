@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, CheckCircle2, AlertCircle, Loader2, Sparkles, Edit2, Trash2 } from 'lucide-react'
+import { Plus, CheckCircle2, AlertCircle, Loader2, Sparkles, Edit2, Trash2, Eye } from 'lucide-react'
 import DataTable from '../components/DataTable'
 import FilterDropdown from '../components/FilterDropdown'
 import Modal from '../components/Modal'
@@ -64,6 +64,10 @@ function InventoryDashboard() {
   const [newProdSellingPrice, setNewProdSellingPrice] = useState('')
   const [prodSubmitStatus, setProdSubmitStatus] = useState(null)
   const [prodError, setProdError] = useState('')
+
+  // --- Purchase Order Details State ---
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null)
+  const [isPurchaseOrderModalOpen, setIsPurchaseOrderModalOpen] = useState(false)
 
   // -------------------------
   // Handlers
@@ -142,6 +146,11 @@ function InventoryDashboard() {
     setProdSubmitStatus(null)
     setProdError('')
     setIsProductModalOpen(true)
+  }
+
+  const openPurchaseOrderDetails = (po) => {
+    setSelectedPurchaseOrder(po)
+    setIsPurchaseOrderModalOpen(true)
   }
 
   const handleDeleteProduct = async () => {
@@ -341,6 +350,25 @@ function InventoryDashboard() {
           </button>
         )
       },
+    },
+    {
+      key: 'actions',
+      header: '',
+      sortable: false,
+      render: (_, row) => (
+        <div className="flex items-center justify-end">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              openPurchaseOrderDetails(row)
+            }}
+            className="p-1.5 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-colors"
+            title="View Details"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+        </div>
+      ),
     },
   ]
 
@@ -880,6 +908,69 @@ function InventoryDashboard() {
             </div>
           </div>
         </form>
+      </Modal>
+
+      {/* --- PURCHASE ORDER DETAILS MODAL --- */}
+      <Modal
+        isOpen={isPurchaseOrderModalOpen}
+        onClose={() => setIsPurchaseOrderModalOpen(false)}
+        title="Receiving Details"
+      >
+        {selectedPurchaseOrder && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 bg-surface-900/50 p-4 rounded-xl border border-surface-700/50">
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Invoice Number</p>
+                <p className="font-semibold text-surface-100">{selectedPurchaseOrder.invoice_number || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Vendor</p>
+                <p className="font-semibold text-surface-100">{selectedPurchaseOrder.vendors?.name || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Date</p>
+                <p className="font-semibold text-surface-100">{new Date(selectedPurchaseOrder.bill_date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Total Cost</p>
+                <p className="font-semibold text-surface-100 tabular-nums">
+                  Rs.{Number(selectedPurchaseOrder.total_cost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-surface-200 uppercase tracking-wider">Goods Received</h3>
+              <div className="space-y-2">
+                {selectedPurchaseOrder.purchase_order_items?.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-surface-800/50 border border-surface-700/50">
+                    <div>
+                      <p className="text-sm font-medium text-surface-100">
+                        {item.products?.sku || 'Unknown Product'}
+                      </p>
+                      <p className="text-xs text-surface-400">
+                        {item.products?.categories?.name} {item.products?.size ? `· ${item.products.size}` : ''} {item.products?.color ? `· ${item.products.color}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-surface-50 tabular-nums">
+                        {item.quantity} {item.unit || 'PKT'}
+                      </p>
+                      <p className="text-xs text-surface-400 tabular-nums">
+                        @ Rs.{Number(item.unit_cost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {(!selectedPurchaseOrder.purchase_order_items || selectedPurchaseOrder.purchase_order_items.length === 0) && (
+                  <p className="text-sm text-surface-400 py-4 text-center border border-dashed border-surface-700/50 rounded-lg">
+                    No items found for this record.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

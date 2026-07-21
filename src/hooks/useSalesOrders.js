@@ -10,7 +10,21 @@ export function useSalesOrders(status) {
     queryFn: async () => {
       let query = supabase
         .from('sales_orders')
-        .select('*, customers(name)')
+        .select(`
+          *,
+          customers (name),
+          sales_order_items (
+            quantity,
+            unit,
+            unit_price,
+            products (
+              sku,
+              size,
+              color,
+              categories (name)
+            )
+          )
+        `)
         .eq('tenant_id', tenantId)
         .order('date', { ascending: false })
 

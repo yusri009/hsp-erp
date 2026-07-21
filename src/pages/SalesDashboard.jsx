@@ -10,10 +10,12 @@ import {
   AlertCircle,
   Trash2,
   RotateCcw,
+  Eye,
 } from 'lucide-react'
 import { useSalesOrders, useFulfillSalesOrder, useDeleteSalesOrder, useUnfulfillSalesOrder } from '../hooks/useSalesOrders'
 import DataTable from '../components/DataTable'
 import StatCard from '../components/StatCard'
+import Modal from '../components/Modal'
 
 const STATUS_TABS = [
   { key: '', label: 'All Orders' },
@@ -24,6 +26,10 @@ const STATUS_TABS = [
 function SalesDashboard() {
   const [activeTab, setActiveTab] = useState('')
   const [fulfillingId, setFulfillingId] = useState(null)
+  
+  // --- Sales Order Details State ---
+  const [selectedSaleOrder, setSelectedSaleOrder] = useState(null)
+  const [isSaleOrderModalOpen, setIsSaleOrderModalOpen] = useState(false)
 
   // Queries — fetch all to get counts, fetch filtered for the table
   const { data: allOrders, isLoading: allLoading } = useSalesOrders()
@@ -67,6 +73,11 @@ function SalesDashboard() {
       console.error('Failed to delete order:', err)
       alert('Failed to delete order: ' + (err.message || 'Unknown error'))
     }
+  }
+
+  const openSaleOrderDetails = (order) => {
+    setSelectedSaleOrder(order)
+    setIsSaleOrderModalOpen(true)
   }
 
   const getTabCount = (key) => {
@@ -222,6 +233,17 @@ function SalesDashboard() {
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                openSaleOrderDetails(row)
+              }}
+              className="p-1.5 text-surface-400 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-colors"
+              title="View Details"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
           </div>
         )
       },
@@ -319,6 +341,69 @@ function SalesDashboard() {
           }
         />
       </div>
+      
+      {/* --- SALES ORDER DETAILS MODAL --- */}
+      <Modal
+        isOpen={isSaleOrderModalOpen}
+        onClose={() => setIsSaleOrderModalOpen(false)}
+        title="Sales Order Details"
+      >
+        {selectedSaleOrder && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 bg-surface-900/50 p-4 rounded-xl border border-surface-700/50">
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Order Number</p>
+                <p className="font-semibold text-surface-100 font-mono">#{String(selectedSaleOrder.id).padStart(4, '0')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Customer</p>
+                <p className="font-semibold text-surface-100">{selectedSaleOrder.customers?.name || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Date</p>
+                <p className="font-semibold text-surface-100">{new Date(selectedSaleOrder.date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-surface-400 mb-1">Total Amount</p>
+                <p className="font-semibold text-surface-100 tabular-nums">
+                  Rs.{Number(selectedSaleOrder.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-surface-200 uppercase tracking-wider">Goods Sold</h3>
+              <div className="space-y-2">
+                {selectedSaleOrder.sales_order_items?.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-surface-800/50 border border-surface-700/50">
+                    <div>
+                      <p className="text-sm font-medium text-surface-100">
+                        {item.products?.sku || 'Unknown Product'}
+                      </p>
+                      <p className="text-xs text-surface-400">
+                        {item.products?.categories?.name} {item.products?.size ? `· ${item.products.size}` : ''} {item.products?.color ? `· ${item.products.color}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-surface-50 tabular-nums">
+                        {item.quantity} {item.unit || 'PKT'}
+                      </p>
+                      <p className="text-xs text-surface-400 tabular-nums">
+                        @ Rs.{Number(item.unit_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {(!selectedSaleOrder.sales_order_items || selectedSaleOrder.sales_order_items.length === 0) && (
+                  <p className="text-sm text-surface-400 py-4 text-center border border-dashed border-surface-700/50 rounded-lg">
+                    No items found for this order.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
