@@ -7,20 +7,23 @@ import {
   TrendingUp,
   ShoppingCart,
   ArrowLeftRight,
+  Package,
 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import DataTable from '../components/DataTable'
 import SearchableSelect from '../components/SearchableSelect'
-import { useSalesReport, usePurchaseReport, useCashFlowReport } from '../hooks/useReports'
+import { useSalesReport, usePurchaseReport, useCashFlowReport, useProductLedgerReport } from '../hooks/useReports'
 import { useCustomers } from '../hooks/useCustomers'
 import { useVendors } from '../hooks/useVendors'
+import { useProducts } from '../hooks/useProducts'
 
 // ─── Constants ────────────────────────────────────────────
 const REPORT_TYPES = [
   { value: 'sales', label: 'Sales Report', icon: TrendingUp },
   { value: 'purchases', label: 'Purchase Report', icon: ShoppingCart },
   { value: 'cashflow', label: 'Cash Flow (Transactions)', icon: ArrowLeftRight },
+  { value: 'product_ledger', label: 'Product Ledger (In/Out)', icon: Package },
 ]
 
 const today = format(new Date(), 'yyyy-MM-dd')
@@ -66,6 +69,14 @@ const CASHFLOW_COLUMNS = [
   { key: 'amount', header: 'Amount', sortable: true, render: (v) => formatCurrency(v) },
 ]
 
+const PRODUCT_LEDGER_COLUMNS = [
+  { key: 'date', header: 'Date', sortable: true },
+  { key: 'type', header: 'Type', render: (v) => <StatusBadge status={v} /> },
+  { key: 'entityName', header: 'Party (Vendor/Customer)' },
+  { key: 'quantity', header: 'Quantity', render: (v, r) => `${v} ${r.unit}` },
+  { key: 'price', header: 'Unit Price/Cost', render: (v) => formatCurrency(v) },
+]
+
 // ─── PDF Generation ───────────────────────────────────────
 function generatePDF({ reportType, startDate, endDate, data, entityName }) {
   const typeLabel = REPORT_TYPES.find(r => r.value === reportType)?.label ?? reportType
@@ -90,7 +101,10 @@ function generatePDF({ reportType, startDate, endDate, data, entityName }) {
   doc.text(`Date Range: ${startDate}  →  ${endDate}`, 14, y)
   if (entityName) {
     y += 6
-    const entityLabel = reportType === 'sales' ? 'Customer' : 'Vendor'
+    let entityLabel = 'Party'
+    if (reportType === 'sales') entityLabel = 'Customer'
+    else if (reportType === 'purchases') entityLabel = 'Vendor'
+    else if (reportType === 'product_ledger') entityLabel = 'Product'
     doc.text(`${entityLabel}: ${entityName}`, 14, y)
   }
   y += 6
@@ -113,6 +127,15 @@ function generatePDF({ reportType, startDate, endDate, data, entityName }) {
       r.vendors?.name ?? '—',
       r.status,
       formatCurrency(r.total_cost),
+    ])
+  } else if (reportType === 'product_ledger') {
+    head = [['Date', 'Type', 'Party', 'Quantity', 'Unit Price']]
+    body = data.map(r => [
+      r.date,
+      r.type,
+      r.entityName,
+      `${r.quantity} ${r.unit}`,
+      formatCurrency(r.price),
     ])
   } else {
     head = [['Date', 'Type', 'Method', 'Status', 'Amount']]
@@ -153,6 +176,7 @@ function Reports() {
   const [endDate, setEndDate] = useState(today)
   const [customerId, setCustomerId] = useState('')
   const [vendorId, setVendorId] = useState('')
+  const [productId, setProductId] = useState('')
 
   // "Generate" is triggered explicitly; tracks the last submitted params
   const [params, setParams] = useState(null)
@@ -160,6 +184,7 @@ function Reports() {
   // Entity lists for dropdowns
   const { data: customers = [] } = useCustomers()
   const { data: vendors = [] } = useVendors()
+  const { data: products = [] } = useProducts()
 
   const customerOptions = useMemo(
     () => customers.map(c => ({ value: c.id, label: c.name })),
@@ -168,6 +193,10 @@ function Reports() {
   const vendorOptions = useMemo(
     () => vendors.map(v => ({ value: v.id, label: v.name })),
     [vendors]
+  )
+  const productOptions = useMemo(
+    () => products.map(p => ({ value: p.id, label: `${p.sku}${p.size ? ` · ${p.size}` : ''}${p.color ? ` · ${p.color}` : ''}` })),
+    [products]
   )
 
   // Data hooks — only active once user clicks Generate
@@ -188,12 +217,19 @@ function Reports() {
     endDate: params?.endDate,
     enabled: params?.reportType === 'cashflow',
   })
+  const productLedgerQuery = useProductLedgerReport({
+    startDate: params?.startDate,
+    endDate: params?.endDate,
+    productId: params?.productId,
+    enabled: params?.reportType === 'product_ledger',
+  })
 
   // Resolve active query for the current report type
   const activeQuery = {
     sales: salesQuery,
     purchases: purchaseQuery,
     cashflow: cashFlowQuery,
+    product_ledger: productLedgerQuery,
   }[params?.reportType] ?? { data: null, isFetching: false, isError: false }
 
   const reportData = activeQuery.data ?? []
@@ -203,6 +239,7 @@ function Reports() {
     sales: SALES_COLUMNS,
     purchases: PURCHASE_COLUMNS,
     cashflow: CASHFLOW_COLUMNS,
+    product_ledger: PRODUCT_LEDGER_COLUMNS,
   }[params?.reportType] ?? SALES_COLUMNS
 
   // Entity name for PDF sub-header
@@ -213,8 +250,12 @@ function Reports() {
     if (params?.reportType === 'purchases' && params?.vendorId) {
       return vendors.find(v => v.id === params.vendorId)?.name ?? null
     }
+    if (params?.reportType === 'product_ledger' && params?.productId) {
+      const p = products.find(p => p.id === params.productId)
+      return p ? `${p.sku}${p.size ? ` · ${p.size}` : ''}${p.color ? ` · ${p.color}` : ''}` : null
+    }
     return null
-  }, [params, customers, vendors])
+  }, [params, customers, vendors, products])
 
   function handleGenerate() {
     setParams({
@@ -223,6 +264,7 @@ function Reports() {
       endDate,
       customerId: reportType === 'sales' ? customerId : '',
       vendorId: reportType === 'purchases' ? vendorId : '',
+      productId: reportType === 'product_ledger' ? productId : '',
     })
   }
 
@@ -289,6 +331,7 @@ function Reports() {
                   setReportType(e.target.value)
                   setCustomerId('')
                   setVendorId('')
+                  setProductId('')
                 }}
                 className="input-field appearance-none pr-8 cursor-pointer"
               >
@@ -351,6 +394,15 @@ function Reports() {
               onChange={setVendorId}
               options={vendorOptions}
               placeholder="All Vendors"
+            />
+          )}
+          {reportType === 'product_ledger' && (
+            <SearchableSelect
+              label="Product (optional)"
+              value={productId}
+              onChange={setProductId}
+              options={productOptions}
+              placeholder="All Products"
             />
           )}
           {reportType === 'cashflow' && (
@@ -450,6 +502,26 @@ function Reports() {
                 <p className={`text-2xl font-bold ${totalCashIn - totalCashOut >= 0 ? 'text-primary-400' : 'text-danger-400'}`}>
                   {formatCurrency(totalCashIn - totalCashOut)}
                 </p>
+              </div>
+            </>
+          )}
+          {params.reportType === 'product_ledger' && (
+            <>
+              <div className="glass-card p-4">
+                <p className="text-xs text-surface-400 uppercase tracking-wider mb-1">Total Entries</p>
+                <p className="text-2xl font-bold text-surface-50">{reportData.length}</p>
+              </div>
+              <div className="glass-card p-4">
+                <p className="text-xs text-surface-400 uppercase tracking-wider mb-1">Incoming</p>
+                <p className="text-2xl font-bold text-primary-400">{reportData.filter(r => r.type === 'Incoming').length}</p>
+              </div>
+              <div className="glass-card p-4">
+                <p className="text-xs text-surface-400 uppercase tracking-wider mb-1">Outgoing</p>
+                <p className="text-2xl font-bold text-danger-400">{reportData.filter(r => r.type === 'Outgoing').length}</p>
+              </div>
+              <div className="glass-card p-4">
+                <p className="text-xs text-surface-400 uppercase tracking-wider mb-1">Date Range</p>
+                <p className="text-sm font-semibold text-surface-200">{params.startDate} → {params.endDate}</p>
               </div>
             </>
           )}

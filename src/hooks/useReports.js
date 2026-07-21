@@ -74,3 +74,64 @@ export function useCashFlowReport({ startDate, endDate, enabled }) {
     enabled: !!tenantId && !!startDate && !!endDate && enabled,
   })
 }
+
+export function useProductLedgerReport({ startDate, endDate, productId, enabled }) {
+  const { tenantId } = useAuth()
+
+  return useQuery({
+    queryKey: ['reports', 'product_ledger', tenantId, startDate, endDate, productId],
+    queryFn: async () => {
+      let purchasesQuery = supabase
+        .from('purchase_order_items')
+        .select(`
+          id, quantity, unit, unit_cost, purchase_orders!inner(bill_date, vendors(name))
+        `)
+        .gte('purchase_orders.bill_date', startDate)
+        .lte('purchase_orders.bill_date', endDate)
+
+      if (productId) {
+        purchasesQuery = purchasesQuery.eq('product_id', productId)
+      }
+
+      let salesQuery = supabase
+        .from('sales_order_items')
+        .select(`
+          id, quantity, unit, unit_price, sales_orders!inner(date, customers(name))
+        `)
+        .gte('sales_orders.date', startDate)
+        .lte('sales_orders.date', endDate)
+
+      if (productId) {
+        salesQuery = salesQuery.eq('product_id', productId)
+      }
+
+      const [purchasesRes, salesRes] = await Promise.all([purchasesQuery, salesQuery])
+
+      if (purchasesRes.error) throw purchasesRes.error
+      if (salesRes.error) throw salesRes.error
+
+      const incoming = purchasesRes.data.map(item => ({
+        id: `p-${item.id}`,
+        date: item.purchase_orders.bill_date,
+        type: 'Incoming',
+        entityName: item.purchase_orders.vendors?.name || '—',
+        quantity: item.quantity,
+        unit: item.unit,
+        price: item.unit_cost,
+      }))
+
+      const outgoing = salesRes.data.map(item => ({
+        id: `s-${item.id}`,
+        date: item.sales_orders.date,
+        type: 'Outgoing',
+        entityName: item.sales_orders.customers?.name || '—',
+        quantity: item.quantity,
+        unit: item.unit,
+        price: item.unit_price,
+      }))
+
+      return [...incoming, ...outgoing].sort((a, b) => new Date(b.date) - new Date(a.date))
+    },
+    enabled: !!tenantId && !!startDate && !!endDate && enabled,
+  })
+}
